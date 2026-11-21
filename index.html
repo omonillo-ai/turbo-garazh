@@ -20,7 +20,7 @@
     .rezhimy button { padding: 14px 4px; font-size: 14px; }
     .stroka { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; gap: 8px; }
     .polosa { display: flex; gap: 3px; margin-top: 4px; }
-    .polosa i { width: 22px; height: 8px; border-radius: 3px; background: rgba(255,255,255,.2); }
+    .polosa { flex-wrap: wrap; max-width: 240px; align-items: center; } .polosa i { width: 7px; height: 10px; border-radius: 3px; background: rgba(255,255,255,.2); }
     .polosa i.est { background: #69f0ae; }
     .cveta { display: flex; gap: 8px; flex-wrap: wrap; }
     .cvet { width: 44px; height: 44px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;
@@ -206,8 +206,10 @@
       { c: "#c62828", n: "Красный" }, { c: "#ef6c00", n: "Оранж" }, { c: "#2e7d32", n: "Зелёный" }, { c: "#6a1b9a", n: "Фиолет" },
       { c: "#ffb300", n: "Золото (миссия)", missiya: true }
     ];
-    const MAX_UR = 5;
-    const cena = (ur) => ur * 100;
+    const MAX_UR = 20;                                 // 20 уровней прокачки
+    const cena = (ur) => 50 + ur * 30;                 // цена следующего уровня: 80, 110, 140 … 620
+    // «сила» прокачки для физики: уровень 1 → 1, уровень 20 → 7 (чтобы машина не стала неуправляемой)
+    const ES = () => 1 + (sohr.skorost - 1) * 6 / 19, EU = () => 1 + (sohr.upr - 1) * 6 / 19;
 
     // ================= 2) ЗВУКИ (Web Audio) =================
     let zvuk = null;
@@ -572,6 +574,9 @@
       });
       tyuningChiz(); garderobChiz();
       polosa("pol-skorost", sohr.skorost); polosa("pol-upr", sohr.upr);
+      $("pol-skorost").title = $("pol-upr").title = "";
+      $("pol-skorost").insertAdjacentHTML("beforeend", "<b style='margin-left:6px;font-size:12px'>" + sohr.skorost + "/" + MAX_UR + "</b>");
+      $("pol-upr").insertAdjacentHTML("beforeend", "<b style='margin-left:6px;font-size:12px'>" + sohr.upr + "/" + MAX_UR + "</b>");
       knopkaProkachki("kup-skorost", "skorost"); knopkaProkachki("kup-upr", "upr");
       $("cveta").innerHTML = "";
       CVETA.forEach(({ c, n, missiya }) => {
@@ -840,13 +845,13 @@
       scena = m.sc; m.igrokM = zamenitMashinu(m.sc, m.igrokM); igrok = m.igrokM;
       m.pul.forEach((p) => { p.visible = false; p.userData.vlad = null; });
       kamera.fov = 62; kamera.updateProjectionMatrix();
-      return { x: 200, skor: 5 + sohr.skorost, put: 0, sdvig: 0, mashiny: [], monety: [], tik: 0 };
+      return { x: 200, skor: 5 + ES(), put: 0, sdvig: 0, mashiny: [], monety: [], tik: 0 };
     }
     function obnovitGonku(k) {
       const g = s;
       g.tik += k;
       g.skor += 0.004 * k;
-      const upr = 3 + sohr.upr * 0.8;
+      const upr = 3 + EU() * 0.8;
       if (klav.left) g.x -= upr * k;
       if (klav.right) g.x += upr * k;
       g.x = Math.max(70, Math.min(330, g.x));
@@ -1034,10 +1039,10 @@
     }
     function obnovitParkovku(k) {
       const { m, u } = s;
-      const maxV = 1.6 + sohr.skorost * 0.15;
+      const maxV = 1.6 + ES() * 0.15;
       if (klav.up) m.v += 0.05 * k; else if (klav.down) m.v -= 0.05 * k; else m.v *= Math.pow(0.94, k);
       m.v = Math.max(-maxV * 0.7, Math.min(maxV, m.v));
-      const povorot = (0.035 + sohr.upr * 0.004) * k * Math.min(1, Math.abs(m.v) / 1.2) * Math.sign(m.v);
+      const povorot = (0.035 + EU() * 0.004) * k * Math.min(1, Math.abs(m.v) / 1.2) * Math.sign(m.v);
       if (klav.left) m.a -= povorot;
       if (klav.right) m.a += povorot;
       m.x += Math.sin(m.a) * m.v * k; m.y -= Math.cos(m.a) * m.v * k;
@@ -1163,12 +1168,12 @@
       const d = s, m = d.m;
       const fx = Math.sin(m.a), fy = -Math.cos(m.a), rx = Math.cos(m.a), ry = Math.sin(m.a);
       let vperyod = m.vx * fx + m.vy * fy, vbok = m.vx * rx + m.vy * ry;
-      const moshch = 0.11 + sohr.skorost * 0.015;
+      const moshch = 0.11 + ES() * 0.015;
       if (klav.up) vperyod += moshch * k;
       if (klav.down) vperyod -= moshch * 1.3 * k;
       vperyod *= Math.pow(0.988, k);
-      vbok *= Math.pow(klav.hand ? 0.985 : 0.9 - sohr.upr * 0.01, k);   // ручник = колёса меньше держат → занос
-      const rul = (0.045 + sohr.upr * 0.004) * Math.min(1, Math.abs(vperyod) / 3) * Math.sign(vperyod) * k;
+      vbok *= Math.pow(klav.hand ? 0.985 : 0.9 - EU() * 0.01, k);   // ручник = колёса меньше держат → занос
+      const rul = (0.045 + EU() * 0.004) * Math.min(1, Math.abs(vperyod) / 3) * Math.sign(vperyod) * k;
       if (klav.left) m.a -= rul;
       if (klav.right) m.a += rul;
       m.vx = fx * vperyod + rx * vbok; m.vy = fy * vperyod + ry * vbok;
@@ -1435,14 +1440,14 @@
     function ehatMashina(m, k, upravlyayu) {
       const fx = Math.sin(m.a), fz = -Math.cos(m.a), rx = Math.cos(m.a), rz = Math.sin(m.a);
       let vp = m.vx * fx + m.vz * fz, vb = m.vx * rx + m.vz * rz;
-      const gaz = 0.011 + sohr.skorost * 0.0016;
+      const gaz = 0.011 + ES() * 0.0016;
       if (upravlyayu && klav.up) vp += gaz * k;
       if (upravlyayu && klav.down) vp -= (vp > 0 ? gaz * 2.2 : gaz * 0.8) * k;
       vp *= Math.pow(upravlyayu && (klav.up || klav.down) ? 0.986 : 0.97, k);
       vp = Math.max(-0.3, vp);
       vb *= Math.pow(upravlyayu && klav.hand ? 0.975 : 0.82, k);
       if (upravlyayu) {
-        const rul = (0.034 + sohr.upr * 0.003) * Math.min(1, Math.abs(vp) / 0.25) * Math.sign(vp) * k;
+        const rul = (0.034 + EU() * 0.003) * Math.min(1, Math.abs(vp) / 0.25) * Math.sign(vp) * k;
         if (klav.left) m.a -= rul;
         if (klav.right) m.a += rul;
       }
@@ -1695,7 +1700,7 @@
     requestAnimationFrame(cikl);
     risovatGarazh();
     window.TEST = { start, klav, get s() { return s; }, get igraIdet() { return igraIdet; }, sohr, UROVNI,
-      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, get C3() { return C3; }, vitrina, sozdatMashinu, smenitKameru, vesEkran };   // для проверки игры
+      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, get C3() { return C3; }, vitrina, sozdatMashinu, smenitKameru, vesEkran, risovatGarazh };   // для проверки игры
   </script>
 </body>
 </html>
