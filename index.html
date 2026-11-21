@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🚗 Турбо Гараж 3D — Мустафо</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: radial-gradient(#263238, #0d1117); color: #fff;
+           display: flex; flex-direction: column; align-items: center; min-height: 100vh; user-select: none; }
+    h1 { margin: 12px 0 2px; font-size: 26px; letter-spacing: 1px; }
+    .podzag { margin: 0 0 8px; color: #90caf9; font-size: 14px; }
+    .ekran { width: 100%; max-width: 420px; padding: 0 8px; box-sizing: border-box; }
+    .karta { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); border-radius: 16px; padding: 12px; margin: 8px 0; }
+    .karta h2 { margin: 0 0 8px; font-size: 18px; }
+    button { font-size: 15px; font-weight: bold; padding: 9px 12px; border-radius: 12px; border: 2px solid #4fc3f7;
+             background: #4fc3f7; color: #0d1117; cursor: pointer; }
+    button:disabled { opacity: .4; cursor: default; }
+    button.prozr { background: transparent; color: #4fc3f7; }
+    .rezhimy { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .rezhimy button { padding: 14px 4px; font-size: 14px; }
+    .stroka { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; gap: 8px; }
+    .polosa { display: flex; gap: 3px; margin-top: 4px; }
+    .polosa i { width: 22px; height: 8px; border-radius: 3px; background: rgba(255,255,255,.2); }
+    .polosa i.est { background: #69f0ae; }
+    .cveta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cvet { width: 44px; height: 44px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;
+            font-size: 11px; display: flex; align-items: center; justify-content: center; color: #fff; text-shadow: 0 1px 2px #000; }
+    .cvet.vybran { border-color: #ffd54f; }
+    .monety { font-size: 22px; color: #ffd54f; font-weight: 900; }
+    #vitrina { width: 100%; aspect-ratio: 2 / 1; border-radius: 12px; display: block; }
+    #igra { display: none; flex-direction: column; align-items: center; width: 100%; }
+    .obertka { position: relative; width: 100%; max-width: 400px; }
+    #holst { width: 100%; aspect-ratio: 400 / 640; border-radius: 14px; background: #111; display: block; touch-action: none; }
+    #hud { position: absolute; left: 0; right: 0; top: 0; padding: 8px 10px; font-weight: bold; font-size: 15px;
+           background: linear-gradient(rgba(0,0,0,.65), transparent); border-radius: 14px 14px 0 0; display: flex; gap: 14px;
+           flex-wrap: wrap; text-shadow: 0 1px 3px #000; pointer-events: none; }
+    #zagruzka { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .pult { display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin: 8px 0 14px; gap: 6px; }
+    .pult button { flex: 1; font-size: 26px; padding: 14px 0; background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.3);
+                   touch-action: none; }
+    .pult button.zhmu { background: #4fc3f7; color: #0d1117; }
+    .verh { display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin: 6px 0; align-items: center; }
+    #oknoKonec { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; z-index: 5; }
+    #oknoKonec .karta { background: #1c2733; text-align: center; max-width: 320px; width: 90%; }
+    #konecZag { font-size: 34px; font-weight: 900; margin: 6px 0; }
+    .malo { font-size: 12px; color: #90a4ae; text-align: center; }
+    .uroven { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+    .uroven button { padding: 6px 12px; }
+    #banner { position: absolute; left: 6%; right: 6%; top: 22%; text-align: center; font-size: 22px; font-weight: 900; padding: 12px;
+              background: rgba(0,0,0,.55); border-radius: 14px; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .4s; pointer-events: none; }
+    #minikarta { position: absolute; right: 8px; bottom: 8px; width: 110px; height: 110px; border-radius: 12px; border: 2px solid rgba(255,255,255,.5); display: none; }
+    #missiiOkno { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; z-index: 6; }
+    #missiiOkno .karta { background: #1c2733; max-width: 340px; width: 90%; }
+    .pult2 { display: none; gap: 6px; width: 100%; max-width: 400px; margin: -6px 0 14px; }
+    .pult2 button { flex: 1; padding: 12px 0; font-size: 17px; }
+  </style>
+  <!-- Three.js — бесплатная библиотека для 3D. Берём её из интернета (CDN). -->
+  <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <h1>🚗 ТУРБО ГАРАЖ 3D</h1>
+  <p class="podzag">Гонка · Парковка · Дрифт · Гараж — сделал Мустафо</p>
+
+  <!-- ===== ГАРАЖ (главное меню) ===== -->
+  <div class="ekran" id="garazh">
+    <div class="karta" style="text-align:center;position:relative">
+      <canvas id="vitrina"></canvas>
+      <div id="zagruzka">⏳ Загружаю 3D...</div>
+      <div class="stroka" style="justify-content:center">🪙 <span class="monety" id="monety">0</span></div>
+    </div>
+
+    <div class="karta">
+      <h2>🏁 Выбери режим</h2>
+      <div class="rezhimy">
+        <button data-rezhim="gonka">🏁<br>Гонка</button>
+        <button data-rezhim="parkovka">🅿️<br>Парковка</button>
+        <button data-rezhim="drift">🌀<br>Дрифт</button>
+        <button data-rezhim="gorod" style="background:#ffd54f;border-color:#ffd54f">🏙️<br>Город + миссии</button>
+      </div>
+      <div class="uroven" id="urovni"></div>
+      <p class="malo" id="rekordy"></p>
+      <p style="text-align:center;margin:6px 0 0"><button class="prozr" id="grafika"></button></p>
+    </div>
+
+    <div class="karta">
+      <h2>🛠️ Прокачка</h2>
+      <div class="stroka">
+        <div>⚡ Скорость<div class="polosa" id="pol-skorost"></div></div>
+        <button id="kup-skorost"></button>
+      </div>
+      <div class="stroka">
+        <div>🎯 Управление<div class="polosa" id="pol-upr"></div></div>
+        <button id="kup-upr"></button>
+      </div>
+    </div>
+
+    <div class="karta">
+      <h2>🎨 Цвет машины</h2>
+      <div class="cveta" id="cveta"></div>
+      <p class="malo">Новый цвет стоит 50 🪙. Купленный цвет остаётся навсегда.</p>
+    </div>
+    <p class="malo">Управление: стрелки или WASD, пробел — ручник. На телефоне — кнопки под экраном.<br>Для 3D нужен интернет (библиотека Three.js).</p>
+  </div>
+
+  <!-- ===== ИГРА ===== -->
+  <div id="igra">
+    <div class="verh">
+      <button class="prozr" id="vGarazh">⬅ Гараж</button>
+      <b id="nazvRezhima"></b>
+      <span>🪙 <b id="monetyIgra">0</b></span>
+    </div>
+    <div class="obertka">
+      <canvas id="holst"></canvas>
+      <div id="hud"></div>
+      <div id="banner"></div>
+      <canvas id="minikarta" width="220" height="220"></canvas>
+    </div>
+    <div class="pult">
+      <button data-k="left">◀</button>
+      <button data-k="right">▶</button>
+      <button data-k="hand" id="knRuchnik" style="font-size:16px">✋<br>ручник</button>
+      <button data-k="down">▼</button>
+      <button data-k="up">▲</button>
+    </div>
+    <div class="pult2" id="pult2">
+      <button id="knVyhod">🚪 Выйти</button>
+      <button id="knMissii">📋 Миссии</button>
+    </div>
+  </div>
+
+  <!-- ===== СПИСОК МИССИЙ ===== -->
+  <div id="missiiOkno">
+    <div class="karta">
+      <h2>📋 Миссии</h2>
+      <div id="missiiSpisok"></div>
+      <p style="text-align:center"><button class="prozr" onclick="document.getElementById('missiiOkno').style.display='none'">Закрыть</button></p>
+    </div>
+  </div>
+
+  <!-- ===== ОКНО КОНЦА ИГРЫ ===== -->
+  <div id="oknoKonec">
+    <div class="karta">
+      <div id="konecZag">GAME OVER</div>
+      <p id="konecTekst"></p>
+      <p style="display:flex;gap:8px;justify-content:center">
+        <button id="eshe">🔄 Ещё раз</button>
+        <button id="dalee" style="display:none">➡️ Дальше</button>
+        <button class="prozr" id="kGarazh">🏠 Гараж</button>
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+    import { Sky } from "three/addons/objects/Sky.js";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+    import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+    // ================= 1) СОХРАНЕНИЕ (localStorage) =================
+    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], rekord: { gonka: 0, drift: 0 }, park: 1 };
+    try { Object.assign(sohr, JSON.parse(localStorage.getItem("turboGarazh") || "{}")); } catch (e) {}
+    function sohranit() { try { localStorage.setItem("turboGarazh", JSON.stringify(sohr)); } catch (e) {} }
+
+    const $ = (id) => document.getElementById(id);
+    const CVETA = [
+      { c: "#eceff1", n: "Белый" }, { c: "#1565c0", n: "Синий" }, { c: "#212121", n: "Чёрный" },
+      { c: "#c62828", n: "Красный" }, { c: "#ef6c00", n: "Оранж" }, { c: "#2e7d32", n: "Зелёный" }, { c: "#6a1b9a", n: "Фиолет" },
+      { c: "#ffb300", n: "Золото (миссия)", missiya: true }
+    ];
+    const MAX_UR = 5;
+    const cena = (ur) => ur * 100;
+
+    // ================= 2) ЗВУКИ (Web Audio) =================
+    let zvuk = null;
+    function bip(chastota, dlit, tip = "square", gromk = 0.08, cherez = 0) {
+      try {
+        zvuk = zvuk || new (window.AudioContext || window.webkitAudioContext)();
+        const o = zvuk.createOscillator(), g = zvuk.createGain();
+        o.type = tip; o.frequency.value = chastota; g.gain.value = gromk;
+        o.connect(g); g.connect(zvuk.destination);
+        const t = zvuk.currentTime + cherez;
+        o.start(t); g.gain.exponentialRampToValueAtTime(0.0001, t + dlit); o.stop(t + dlit);
+      } catch (e) {}
+    }
+    const zvukMoneta = () => { bip(880, 0.08); bip(1320, 0.12, "square", 0.08, 0.07); };
+    const zvukUdar = () => { bip(90, 0.4, "sawtooth", 0.2); bip(60, 0.5, "square", 0.15, 0.05); };
+    const muzykaGameOver = () => [523, 440, 349, 262].forEach((f, i) => bip(f, 0.3, "triangle", 0.15, i * 0.25));
+    const muzykaPobeda = () => [523, 659, 784, 1047].forEach((f, i) => bip(f, 0.25, "triangle", 0.15, i * 0.15));
+
+    // ================= 3) 3D: РЕНДЕР, МАТЕРИАЛЫ, МАШИНА =================
+    // Логика игры считает всё в «пикселях» поля 400×640, как в 2D-версии.
+    // В 3D-мире 1 единица = 10 пикселей. Центр поля (200, 320) = точка (0, 0).
+    const W = 400, VYS = 640;
+    const v3x = (x) => (x - 200) / 10, v3z = (y) => (y - 320) / 10;
+
+    function sozdatRender(canvas, w, h) {
+      const r = new THREE.WebGLRenderer({ canvas, antialias: true });
+      r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      r.setSize(w, h, false);
+      r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+      r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+      r.outputColorSpace = THREE.SRGBColorSpace;
+      // «окружение» — невидимая комната, которая отражается в блестящей краске машины
+      r.env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
+      return r;
+    }
+    const render = sozdatRender($("holst"), W, VYS);
+    const renderVitrina = sozdatRender($("vitrina"), 400, 200);
+    $("zagruzka").remove();
+
+    // ✨ «Свечение» (bloom): всё, что ярко светится (фары, окна, неон), красиво «сияет».
+    // На слабом телефоне можно выключить: «Графика: обычная».
+    function sozdatKompozer(r, kam, w, h, sila) {
+      const k = new EffectComposer(r), rp = new RenderPass(new THREE.Scene(), kam);
+      k.addPass(rp); k.addPass(new UnrealBloomPass(new THREE.Vector2(w, h), sila, 0.4, 0.93)); k.addPass(new OutputPass());
+      k.setSize(w, h); return { k, rp };
+    }
+    let vysokaya = sohr.grafika !== "obychnaya";
+    function primenitGrafiku() {
+      const pr = vysokaya ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+      [[render, W, VYS], [renderVitrina, 400, 200]].forEach(([r, w, h]) => { r.setPixelRatio(pr); r.setSize(w, h, false); });
+      if (window.KOMP) { KOMP.igra.k.setPixelRatio(pr); KOMP.igra.k.setSize(W, VYS); KOMP.vitr.k.setPixelRatio(pr); KOMP.vitr.k.setSize(400, 200); }
+      $("grafika").textContent = vysokaya ? "✨ Графика: ВЫСОКАЯ (нажми, если тормозит)" : "⚙️ Графика: обычная (нажми для красоты)";
+    }
+    $("grafika").onclick = () => { vysokaya = !vysokaya; sohr.grafika = vysokaya ? "vysokaya" : "obychnaya"; sohranit(); primenitGrafiku(); };
+
+    // текстура, нарисованная в обычном 2D-canvas (так делаем разметку, полоски, буквы)
+    function tekstura(w, h, risuy, povtor) {
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      risuy(c.getContext("2d"), w, h);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+      if (povtor) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(povtor[0], povtor[1]); }
+      return t;
+    }
+    function shum(c, w, h, n, cveta) {                         // мелкие точки — асфальт/бетон выглядят живыми
+      for (let i = 0; i < n; i++) { c.fillStyle = cveta[i % cveta.length]; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    }
+
+    const kraski = new Map();                                  // краска машины: блестящая, с лаком (clearcoat)
+    function kraska(cvet) {
+      if (!kraski.has(cvet)) kraski.set(cvet, new THREE.MeshPhysicalMaterial({
+        color: cvet, metalness: 0.55, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.06 }));
+      return kraski.get(cvet);
+    }
+    const MAT = {
+      steklo: new THREE.MeshPhysicalMaterial({ color: 0x1d2b38, metalness: 0.6, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02 }),
+      shina: new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.92 }),
+      disk: new THREE.MeshStandardMaterial({ color: 0xc9d0d6, metalness: 1, roughness: 0.22 }),
+      diskTemn: new THREE.MeshStandardMaterial({ color: 0x2a2d31, metalness: 0.9, roughness: 0.3 }),
+      tormoz: new THREE.MeshStandardMaterial({ color: 0xd32f2f, roughness: 0.4, metalness: 0.3 }),
+      chernyi: new THREE.MeshStandardMaterial({ color: 0x0d0d0d, roughness: 0.55 }),
+      plastik: new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.8 }),
+      fara: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6e0, emissiveIntensity: 3 }),
+      linza: new THREE.MeshPhysicalMaterial({ color: 0x9fb3c8, metalness: 0.9, roughness: 0.05, clearcoat: 1 }),
+      stop: new THREE.MeshStandardMaterial({ color: 0xff1744, emissive: 0xff1030, emissiveIntensity: 2.4 }),
+      hrom: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1, roughness: 0.12 }),
+      vnutri: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7, side: THREE.DoubleSide })
+    };
+    // номерной знак с надписью
+    const NOMER = new THREE.MeshStandardMaterial({ roughness: 0.5, map: tekstura(256, 64, (c, w, h) => {
+      c.fillStyle = "#f5f5f5"; c.fillRect(0, 0, w, h); c.strokeStyle = "#222"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6);
+      c.fillStyle = "#111"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("REAL", w / 2, h / 2 + 2);
+    }) });
+    // мягкая тень прямо под машиной — машина «стоит» на земле, а не висит
+    const TEN = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: tekstura(128, 128, (c) => {
+      const g = c.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, "rgba(0,0,0,.75)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    }) });
+
+    // profil: контур сбоку (x = вперёд, y = вверх) → объёмная деталь шириной shir со скруглёнными краями
+    function profil(kontur, shir, fask) {
+      const g = new THREE.ExtrudeGeometry(kontur, { depth: shir, bevelEnabled: true, bevelThickness: fask, bevelSize: fask, bevelSegments: 5, curveSegments: 16 });
+      return g.translate(0, 0, -shir / 2).rotateY(Math.PI / 2);   // нос машины смотрит в −Z
+    }
+    const set = (m, x, y, z) => { m.position.set(x, y, z); return m; };
+
+    // ---- 3 вида машин: спорткар, седан, джип ----
+    // niz — нижняя часть кузова с вырезами под колёса; kabina — «стеклянный купол», крыша идёт по его верху
+    const TIPY = {
+      sport: { r: 0.46, osX: 1.06, pered: 1.45, zad: -1.5, dno: 0.42, kapot: [[2.1, 0.78], [0.95, 0.94]], poyas: -1.55, poyasY: 0.99, zadY: 0.88,
+               kabina: [[1.0, 0.92], [0.35, 1.32], [-0.25, 1.53], [-0.95, 1.54], [-1.55, 1.32], [-2.0, 0.98]], farY: 0.68, stopY: 0.88, spoiler: true, trub: 4 },
+      sedan: { r: 0.45, osX: 1.06, pered: 1.5, zad: -1.5, dno: 0.42, kapot: [[2.1, 0.84], [1.05, 0.98]], poyas: -1.35, poyasY: 1.03, zadY: 1.02,
+               kabina: [[1.05, 0.98], [0.45, 1.42], [0.0, 1.62], [-0.9, 1.63], [-1.35, 1.46], [-1.72, 1.04]], farY: 0.74, stopY: 0.92, trub: 2 },
+      dzhip: { r: 0.53, osX: 1.1, pered: 1.5, zad: -1.5, dno: 0.55, kapot: [[2.15, 1.02], [1.1, 1.14]], poyas: -2.05, poyasY: 1.2, zadY: 1.18,
+               kabina: [[1.15, 1.14], [0.6, 1.62], [0.15, 1.95], [-1.0, 1.98], [-1.85, 1.96], [-2.15, 1.2]], farY: 0.95, stopY: 1.08, rejlingi: true, trub: 2 }
+    };
+    const GEO_TIP = {};
+    function geoTipa(tip) {
+      if (GEO_TIP[tip]) return GEO_TIP[tip];
+      const t = TIPY[tip], F = 0.12, R = t.r + 0.12 + F;           // F — скругление; R — вырез под колесо
+      const niz = new THREE.Shape();
+      niz.moveTo(-2.25, t.dno + 0.15);
+      niz.quadraticCurveTo(-2.27, t.dno, -2.1, t.dno);
+      niz.lineTo(t.zad - R, t.dno); niz.absarc(t.zad, t.r, R, Math.PI, 0, true);        // арка заднего колеса
+      niz.lineTo(t.pered - R, t.dno); niz.absarc(t.pered, t.r, R, Math.PI, 0, true);    // арка переднего колеса
+      niz.lineTo(2.12, t.dno); niz.quadraticCurveTo(2.3, t.dno, 2.3, t.dno + 0.2);
+      niz.quadraticCurveTo(2.3, t.kapot[0][1], t.kapot[0][0], t.kapot[0][1]);            // бампер → капот
+      niz.quadraticCurveTo(1.5, t.kapot[1][1] - 0.02, t.kapot[1][0], t.kapot[1][1]);
+      niz.lineTo(t.poyas, t.poyasY);
+      niz.quadraticCurveTo(-2.2, t.poyasY + 0.02, -2.25, t.zadY);
+      niz.closePath();
+      // купол кабины — плавная линия через точки (SplineCurve)
+      const linia = new THREE.SplineCurve(t.kabina.map(([x, y]) => new THREE.Vector2(x, y)));
+      const tochki = linia.getPoints(40);
+      const kab = new THREE.Shape(tochki); kab.closePath();
+      // крыша — тонкая полоса по верху купола (от лобового стекла до заднего)
+      const verh = tochki.slice(11, 33), krysha = new THREE.Shape();
+      verh.forEach((p, i) => (i ? krysha.lineTo(p.x, p.y + 0.035) : krysha.moveTo(p.x, p.y + 0.035)));
+      verh.slice().reverse().forEach((p) => krysha.lineTo(p.x, p.y - 0.06));
+      const shirKab = tip === "dzhip" ? 1.86 : 1.7;
+      GEO_TIP[tip] = {
+        niz: profil(niz, 2.16, F),
+        kabina: profil(kab, shirKab, 0.1),
+        krysha: profil(krysha, shirKab + 0.08, 0.05),
+        // шина — «бублик» с плоским протектором (LatheGeometry крутит профиль вокруг оси, как гончарный круг)
+        shina: new THREE.LatheGeometry([[0.64, -0.15], [0.9, -0.17], [0.97, -0.16], [1, -0.12], [1, 0.12], [0.97, 0.16], [0.9, 0.17], [0.64, 0.15]]
+          .map(([rr, y]) => new THREE.Vector2(rr * t.r, y)), 40).rotateZ(Math.PI / 2),
+        disk: new THREE.CylinderGeometry(t.r * 0.66, t.r * 0.66, 0.26, 30, 1, true).rotateZ(Math.PI / 2),
+        obod: new THREE.TorusGeometry(t.r * 0.64, 0.025, 8, 36).rotateY(Math.PI / 2),
+        tormDisk: new THREE.CylinderGeometry(t.r * 0.5, t.r * 0.5, 0.04, 24).rotateZ(Math.PI / 2),
+        kolpak: new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16).rotateZ(Math.PI / 2),
+        spica: new THREE.BoxGeometry(0.05, t.r * 1.22, 0.075),
+        tormoz: new THREE.BoxGeometry(0.12, t.r * 0.45, t.r * 0.5),
+        ten: new THREE.PlaneGeometry(3.2, 5.6).rotateX(-Math.PI / 2)
+      };
+      return GEO_TIP[tip];
+    }
+    const GEO = {
+      fara: new THREE.BoxGeometry(0.5, 0.1, 0.1), drl: new THREE.BoxGeometry(0.42, 0.035, 0.1), linza: new THREE.BoxGeometry(0.56, 0.17, 0.08),
+      stop: new THREE.BoxGeometry(0.5, 0.11, 0.08), stopPolosa: new THREE.BoxGeometry(1.4, 0.035, 0.06),
+      vozduh: new THREE.BoxGeometry(1.5, 0.2, 0.1), nomer: new THREE.PlaneGeometry(0.72, 0.18), porog: new THREE.BoxGeometry(0.1, 0.1, 1.5),
+      spoiler: new THREE.BoxGeometry(2.1, 0.06, 0.42), stoika: new THREE.BoxGeometry(0.07, 0.2, 0.14),
+      zerkalo: new RoundedBoxGeometry(0.3, 0.16, 0.18, 2, 0.05), nozhka: new THREE.BoxGeometry(0.16, 0.04, 0.06),
+      ruchka: new THREE.BoxGeometry(0.03, 0.04, 0.22), truba: new THREE.CylinderGeometry(0.07, 0.07, 0.14, 14).rotateX(Math.PI / 2),
+      rejling: new THREE.BoxGeometry(0.06, 0.06, 1.9), diffuzor: new THREE.BoxGeometry(1.4, 0.14, 0.12)
+    };
+
+    // Машина из деталей (без чужих логотипов). Нос смотрит в −Z. tip: "sport" | "sedan" | "dzhip"
+    function sozdatMashinu(cvet, tip = "sport") {
+      const t = TIPY[tip], G = geoTipa(tip), g = new THREE.Group(), kr = kraska(cvet), okrashennye = [];
+      const kras = (geo) => { const m = new THREE.Mesh(geo, kr); okrashennye.push(m); return m; };
+      const add = (m, x, y, z, ten = false) => { set(m, x, y, z); if (ten) m.castShadow = true; g.add(m); return m; };
+      add(kras(G.niz), 0, 0, 0, true);
+      add(new THREE.Mesh(G.kabina, MAT.steklo), 0, 0, 0, true);
+      add(kras(G.krysha), 0, 0, 0, true);
+      const ten = add(new THREE.Mesh(G.ten, TEN), 0, 0.02, 0); ten.renderOrder = -1;
+      const perY = t.farY, zadZ = 2.4, perZ = -2.42;
+      [-1, 1].forEach((s) => {
+        // фары: линза + яркая полоска дневного света (LED)
+        add(new THREE.Mesh(GEO.linza, MAT.linza), s * 0.72, perY, perZ + 0.02);
+        add(new THREE.Mesh(GEO.fara, MAT.fara), s * 0.72, perY + 0.02, perZ - 0.01);
+        const drl = add(new THREE.Mesh(GEO.drl, MAT.fara), s * 0.7, perY - 0.1, perZ - 0.01); drl.rotation.z = s * 0.12;
+        // задние фонари
+        add(new THREE.Mesh(GEO.stop, MAT.stop), s * 0.74, t.stopY, zadZ);
+        // зеркала на ножках, ручки дверей, пороги
+        const z = add(kras(GEO.zerkalo), s * (tip === "dzhip" ? 1.18 : 1.1), t.kabina[0][1] + 0.12, -0.55 + (tip === "dzhip" ? -0.1 : 0)); z.castShadow = true;
+        add(new THREE.Mesh(GEO.nozhka, MAT.chernyi), s * 0.98, t.kabina[0][1] + 0.08, -0.55);
+        add(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, -0.1);
+        add(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, 0.95);
+        add(new THREE.Mesh(GEO.porog, MAT.plastik), s * 1.2, t.dno + 0.02, 0.02);
+        if (t.spoiler) add(new THREE.Mesh(GEO.stoika, MAT.chernyi), s * 0.7, t.zadY + 0.1, 1.95);
+        if (t.rejlingi) add(new THREE.Mesh(GEO.rejling, MAT.plastik), s * 0.75, t.kabina[3][1] + 0.08, 0.45);
+      });
+      add(new THREE.Mesh(GEO.stopPolosa, MAT.stop), 0, t.stopY + 0.02, zadZ + 0.01);              // световая полоса через весь зад
+      add(new THREE.Mesh(GEO.vozduh, MAT.plastik), 0, t.dno + 0.13, perZ + 0.05);                 // воздухозаборник
+      add(new THREE.Mesh(GEO.diffuzor, MAT.plastik), 0, t.dno + 0.08, zadZ - 0.03);
+      const np = add(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, perZ - 0.02); np.rotation.y = Math.PI;
+      add(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, zadZ + 0.06);
+      const trub = t.trub === 4 ? [-0.62, -0.45, 0.45, 0.62] : [-0.55, 0.55];
+      trub.forEach((x) => add(new THREE.Mesh(GEO.truba, MAT.hrom), x, t.dno + 0.08, zadZ + 0.04));
+      if (t.spoiler) add(new THREE.Mesh(GEO.spoiler, MAT.chernyi), 0, t.zadY + 0.22, 1.95, true);
+      // колёса: шина + боковина + диск со спицами + красный суппорт. povorot — руль, kruchenie — вращение
+      const kolesa = [], perednie = [];
+      [[-1, t.pered], [1, t.pered], [-1, t.zad], [1, t.zad]].forEach(([s, xProf], i) => {
+        const povorot = set(new THREE.Group(), s * t.osX, t.r, -xProf), kruchenie = new THREE.Group();
+        const shina = new THREE.Mesh(G.shina, MAT.shina); shina.castShadow = true;
+        const diskMat = tip === "dzhip" ? MAT.diskTemn : MAT.disk;
+        kruchenie.add(shina, new THREE.Mesh(G.disk, MAT.vnutri), new THREE.Mesh(G.tormDisk, MAT.diskTemn));
+        const obod = new THREE.Mesh(G.obod, diskMat); obod.position.x = s * 0.13; kruchenie.add(obod);
+        const kp = new THREE.Mesh(G.kolpak, MAT.hrom); kp.position.x = s * 0.15; kruchenie.add(kp);
+        for (let k = 0; k < 5; k++) {                         // 10 спиц (5 палочек через центр)
+          const sp = new THREE.Mesh(G.spica, diskMat); sp.position.x = s * 0.13; sp.rotation.x = (k / 5) * Math.PI; kruchenie.add(sp);
+        }
+        const supp = new THREE.Mesh(G.tormoz, MAT.tormoz); supp.position.set(s * 0.03, t.r * 0.28, i < 2 ? 0.12 : -0.12);
+        povorot.add(kruchenie, supp); g.add(povorot);
+        kolesa.push(kruchenie); if (i < 2) perednie.push(povorot);
+      });
+      g.userData = { kolesa, perednie, okrashennye, tip };
+      return g;
+    }
+    const TIPY_SPISOK = ["sedan", "dzhip", "sport"];
+    function perekrasit(mashina, cvet) { mashina.userData.okrashennye.forEach((m) => (m.material = kraska(cvet))); }
+    // крутим колёса и руль; naklon — машина чуть наклоняется в повороте (как настоящая)
+    function animirovatMashinu(mashina, skorost, rul, naklon = 0) {
+      mashina.userData.kolesa.forEach((k) => (k.rotation.x -= skorost * 0.35));
+      mashina.userData.perednie.forEach((p) => (p.rotation.y += (-rul * 0.45 - p.rotation.y) * 0.3));
+      mashina.rotation.z += (naklon - mashina.rotation.z) * 0.15;
+    }
+    // ставим 3D-машину туда, где она стоит в логике игры (x, y в пикселях, a — угол)
+    function postavit(obj, x, y, a = 0, h = 0) { obj.position.set(v3x(x), h, v3z(y)); obj.rotation.y = -a; }
+
+    function svet(scena, { yarkost = 2.4, nebo = 0.7, cvetNeba = 0xcfe8ff, razmer = 40 } = {}) {
+      scena.add(new THREE.HemisphereLight(cvetNeba, 0x3b4a2a, nebo));
+      const s = new THREE.DirectionalLight(0xffffff, yarkost);
+      s.position.set(14, 30, 12); s.castShadow = true;
+      s.shadow.mapSize.set(2048, 2048);
+      Object.assign(s.shadow.camera, { left: -razmer, right: razmer, top: razmer, bottom: -razmer, near: 1, far: 120 });
+      s.shadow.bias = -0.0005;
+      scena.add(s, s.target);
+      return s;
+    }
+    function derevo() {
+      const g = new THREE.Group();
+      const stvol = set(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 1.6, 8),
+        new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 1 })), 0, 0.8, 0);
+      const krona = set(new THREE.Mesh(new THREE.ConeGeometry(1.5 + Math.random() * 0.6, 3.6, 9),
+        new THREE.MeshStandardMaterial({ color: [0x2e7d32, 0x388e3c, 0x1b5e20][Math.floor(Math.random() * 3)], roughness: 0.9, flatShading: true })), 0, 3.2, 0);
+      stvol.castShadow = krona.castShadow = true;
+      g.add(stvol, krona); return g;
+    }
+    function fonar(cvetSveta = 0xfff1c1) {
+      const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: 0x455a64, metalness: 0.6, roughness: 0.4 });
+      g.add(set(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 6, 8), m), 0, 3, 0));
+      g.add(set(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 0.2), m), 0.65, 6, 0));
+      g.add(set(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.35),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: cvetSveta, emissiveIntensity: 3 })), 1.2, 5.92, 0));
+      return g;
+    }
+
+    // ================= 4) ГАРАЖ (3D-витрина) =================
+    const vitrina = { scena: new THREE.Scene(), kamera: new THREE.PerspectiveCamera(35, 2, 0.1, 100) };
+    {
+      const sc = vitrina.scena;
+      sc.background = new THREE.Color(0x151c24); sc.environment = renderVitrina.env;
+      sc.add(new THREE.HemisphereLight(0xbfdcff, 0x202020, 0.5));
+      const prozhektor = new THREE.SpotLight(0xffffff, 300, 30, 0.6, 0.6);
+      prozhektor.position.set(0, 9, 2); prozhektor.castShadow = true; sc.add(prozhektor);
+      const neon = new THREE.Mesh(new THREE.TorusGeometry(4.4, 0.05, 8, 80).rotateX(Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0x4fc3f7, emissive: 0x4fc3f7, emissiveIntensity: 3 }));
+      neon.position.y = 0.02; sc.add(neon);
+      const pol = new THREE.Mesh(new THREE.CircleGeometry(4.4, 64).rotateX(-Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0x1f2a33, metalness: 0.6, roughness: 0.25 }));
+      pol.receiveShadow = true; sc.add(pol);
+      vitrina.mashina = sozdatMashinu(sohr.cvet); sc.add(vitrina.mashina);
+      vitrina.kamera.position.set(5.6, 2.4, 6.2); vitrina.kamera.lookAt(0, 0.75, 0);
+    }
+
+    function risovatGarazh() {
+      $("monety").textContent = sohr.monety;
+      perekrasit(vitrina.mashina, sohr.cvet);
+      polosa("pol-skorost", sohr.skorost); polosa("pol-upr", sohr.upr);
+      knopkaProkachki("kup-skorost", "skorost"); knopkaProkachki("kup-upr", "upr");
+      $("cveta").innerHTML = "";
+      CVETA.forEach(({ c, n, missiya }) => {
+        const d = document.createElement("div");
+        d.className = "cvet" + (sohr.cvet === c ? " vybran" : "");
+        d.style.background = c; d.title = n;
+        d.textContent = sohr.kupleno.includes(c) ? "" : missiya ? "🏆" : "50🪙";
+        d.onclick = () => {
+          if (missiya && !sohr.kupleno.includes(c)) { soobsh("✨ Этот цвет — награда за миссию «Золотая машина» в Городе!"); return; }
+          if (!sohr.kupleno.includes(c)) {
+            if (sohr.monety < 50) { soobsh("Не хватает монет 🪙"); return; }
+            sohr.monety -= 50; sohr.kupleno.push(c); zvukMoneta();
+          }
+          sohr.cvet = c; sohranit(); risovatGarazh();
+        };
+        $("cveta").appendChild(d);
+      });
+      $("rekordy").textContent = "🏆 Рекорды: гонка " + sohr.rekord.gonka + " м · дрифт " + sohr.rekord.drift + " очк · парковка: уровень " + Math.min(sohr.park, UROVNI.length) + "/" + UROVNI.length;
+      $("urovni").innerHTML = "";
+    }
+    function polosa(id, ur) { $(id).innerHTML = Array.from({ length: MAX_UR }, (_, i) => '<i class="' + (i < ur ? "est" : "") + '"></i>').join(""); }
+    function knopkaProkachki(id, kluch) {
+      const b = $(id), ur = sohr[kluch];
+      if (ur >= MAX_UR) { b.textContent = "MAX ✅"; b.disabled = true; return; }
+      b.textContent = "⬆ " + cena(ur) + " 🪙"; b.disabled = sohr.monety < cena(ur);
+      b.onclick = () => { sohr.monety -= cena(ur); sohr[kluch]++; zvukMoneta(); sohranit(); risovatGarazh(); };
+    }
+    function soobsh(t) { $("rekordy").textContent = t; setTimeout(risovatGarazh, 1500); }
+
+    // ================= 5) УПРАВЛЕНИЕ =================
+    const klav = { left: false, right: false, up: false, down: false, hand: false };
+    const KNOPKI = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", ArrowUp: "up", KeyW: "up",
+                     ArrowDown: "down", KeyS: "down", Space: "hand" };
+    addEventListener("keydown", (e) => { if (KNOPKI[e.code]) { klav[KNOPKI[e.code]] = true; e.preventDefault(); } });
+    addEventListener("keyup", (e) => { if (KNOPKI[e.code]) klav[KNOPKI[e.code]] = false; });
+    document.querySelectorAll(".pult button").forEach((b) => {
+      const vkl = (zn) => (e) => { e.preventDefault(); klav[b.dataset.k] = zn; b.classList.toggle("zhmu", zn); };
+      b.addEventListener("pointerdown", vkl(true)); b.addEventListener("pointerup", vkl(false));
+      b.addEventListener("pointerleave", vkl(false)); b.addEventListener("pointercancel", vkl(false));
+    });
+    const rulKlav = () => (klav.right ? 1 : 0) - (klav.left ? 1 : 0);
+
+    // ================= 6) ОБЩЕЕ ДЛЯ ИГРЫ =================
+    let rezhim = null, igraIdet = false, s = null, zarabotano = 0;
+    let scena = null, kamera = new THREE.PerspectiveCamera(60, W / VYS, 0.1, 1200), igrok = null;
+    window.KOMP = { igra: sozdatKompozer(render, kamera, W, VYS, 0.4), vitr: sozdatKompozer(renderVitrina, vitrina.kamera, 400, 200, 0.45) };
+    primenitGrafiku();
+    function narisovat(r, komp, sc, kam) {
+      if (vysokaya) { komp.rp.scene = sc; komp.rp.camera = kam; komp.k.render(); } else r.render(sc, kam);
+    }
+
+    function start(r) {
+      rezhim = r; zarabotano = 0;
+      $("garazh").style.display = "none"; $("igra").style.display = "flex"; $("oknoKonec").style.display = "none";
+      $("nazvRezhima").textContent = { gonka: "🏁 Гонка", parkovka: "🅿️ Парковка · ур. " + tekUroven, drift: "🌀 Дрифт", gorod: "🏙️ Город" }[r];
+      $("knRuchnik").style.visibility = r === "drift" || r === "gorod" ? "visible" : "hidden";
+      $("knRuchnik").innerHTML = "✋<br>ручник";
+      $("pult2").style.display = "none"; $("minikarta").style.display = r === "gorod" ? "block" : "none";
+      $("banner").style.opacity = 0;
+      s = r === "gonka" ? novayaGonka() : r === "parkovka" ? novayaParkovka() : r === "drift" ? novyiDrift() : novyiGorod();
+      igraIdet = true;
+    }
+    function konec(zag, tekst, pobeda, dalee = false) {
+      igraIdet = false;
+      sohr.monety += zarabotano; sohranit();
+      $("konecZag").textContent = zag; $("konecZag").style.color = pobeda ? "#69f0ae" : "#ff5252";
+      $("konecTekst").innerHTML = tekst + "<br>🪙 +" + zarabotano + " монет";
+      $("dalee").style.display = dalee ? "inline-block" : "none";
+      $("oknoKonec").style.display = "flex";
+      pobeda ? muzykaPobeda() : muzykaGameOver();
+    }
+    $("eshe").onclick = () => start(rezhim);
+    $("dalee").onclick = () => { tekUroven = Math.min(tekUroven + 1, UROVNI.length); start("parkovka"); };
+    $("kGarazh").onclick = $("vGarazh").onclick = () => {
+      igraIdet = false; s = null; $("oknoKonec").style.display = "none"; $("missiiOkno").style.display = "none";
+      $("igra").style.display = "none"; $("garazh").style.display = "block"; risovatGarazh();
+    };
+    document.querySelectorAll("[data-rezhim]").forEach((b) => {
+      b.onclick = () => (b.dataset.rezhim === "parkovka" ? pokazatUrovni() : start(b.dataset.rezhim));
+    });
+    function pokazatUrovni() {
+      $("urovni").innerHTML = "<span style='width:100%;text-align:center'>🅿️ Выбери уровень:</span>";
+      UROVNI.forEach((_, i) => {
+        const b = document.createElement("button");
+        b.textContent = i < sohr.park ? (i + 1) : "🔒";
+        b.disabled = i >= sohr.park;
+        b.onclick = () => { tekUroven = i + 1; start("parkovka"); };
+        $("urovni").appendChild(b);
+      });
+    }
+
+    // столкновения: машину заменяем тремя кругами вдоль неё
+    function krugPryam(cx, cy, r, p) {
+      const bx = Math.max(p.x, Math.min(cx, p.x + p.w)), by = Math.max(p.y, Math.min(cy, p.y + p.h));
+      return (cx - bx) ** 2 + (cy - by) ** 2 < r * r;
+    }
+    function krugiMashiny(m) {
+      const fx = Math.sin(m.a), fy = -Math.cos(m.a);
+      return [-14, 0, 14].map((d) => [m.x + fx * d, m.y + fy * d]);
+    }
+    function udarilas(m, prepyatstviya) {
+      return krugiMashiny(m).some(([x, y]) =>
+        x < 11 || x > W - 11 || y < 11 || y > VYS - 11 || prepyatstviya.some((p) => krugPryam(x, y, 11, p)));
+    }
+    let hudBylo = "";
+    function hud(stroki) {
+      const t = stroki.map((x) => "<span>" + x + "</span>").join("");
+      if (t !== hudBylo) { $("hud").innerHTML = t; hudBylo = t; }
+      $("monetyIgra").textContent = sohr.monety + zarabotano;
+    }
+
+    // ================= 7) РЕЖИМ «ГОНКА» =================
+    const POLOSY = [88, 144, 200, 256, 312];   // центры 5 полос: между машинами не спрячешься!
+    let G3 = null;                              // 3D-мир гонки строим один раз и потом используем снова
+    function mirGonki() {
+      if (G3) return G3;
+      const sc = new THREE.Scene();
+      sc.background = new THREE.Color(0x8fd3ff); sc.fog = new THREE.Fog(0x8fd3ff, 50, 150);
+      sc.environment = render.env;
+      const solnce = svet(sc, { razmer: 30 });
+      // дорога: разметка нарисована на текстуре, текстура «бежит» — кажется, что едем
+      const dorogaTex = tekstura(280, 80, (c, w, h) => {
+        c.fillStyle = "#3d4247"; c.fillRect(0, 0, w, h); shum(c, w, h, 900, ["#4a5056", "#32363a", "#55595e"]);
+        c.fillStyle = "#fff"; c.fillRect(0, 0, 5, h); c.fillRect(w - 5, 0, 5, h);
+        c.fillStyle = "#ffd600"; [56, 112, 168, 224].forEach((x) => c.fillRect(x - 2, 0, 4, h / 2));
+      }, [1, 25]);
+      const doroga = new THREE.Mesh(new THREE.PlaneGeometry(28, 200).rotateX(-Math.PI / 2),
+        new THREE.MeshStandardMaterial({ map: dorogaTex, roughness: 0.85 }));
+      doroga.position.z = -80; doroga.receiveShadow = true; sc.add(doroga);
+      const travaTex = tekstura(128, 128, (c, w, h) => { c.fillStyle = "#3f8f3a"; c.fillRect(0, 0, w, h); shum(c, w, h, 1500, ["#4caf50", "#357a30", "#5bbf55"]); }, [20, 60]);
+      const trava = new THREE.Mesh(new THREE.PlaneGeometry(200, 260).rotateX(-Math.PI / 2),
+        new THREE.MeshStandardMaterial({ map: travaTex, roughness: 1 }));
+      trava.position.set(0, -0.02, -80); trava.receiveShadow = true; sc.add(trava);
+      // бордюры
+      [-14.3, 14.3].forEach((x) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 200), new THREE.MeshStandardMaterial({ color: 0xe0e0e0 }));
+        b.position.set(x, 0.15, -80); b.receiveShadow = true; sc.add(b);
+      });
+      // деревья и фонари по краям — они «едут» нам навстречу
+      const dekor = [];
+      for (let i = 0; i < 34; i++) {
+        const levo = i % 2 === 0, o = i % 4 < 2 ? derevo() : fonar();
+        const x = levo ? -17 - Math.random() * 6 : 17 + Math.random() * 6;
+        o.position.set(o.children.length === 2 ? x : (levo ? -15.5 : 15.5), 0, 20 - i * 5);
+        if (o.children.length !== 2 && !levo) o.rotation.y = Math.PI;
+        sc.add(o); dekor.push(o);
+      }
+      const pul = [];                                          // «бассейн» машин-соперников
+      for (let i = 0; i < 14; i++) { const m = sozdatMashinu("#fff", TIPY_SPISOK[i % 3]); m.visible = false; sc.add(m); pul.push(m); }
+      const monetaGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.14, 28).rotateX(Math.PI / 2);
+      const monetaMat = new THREE.MeshStandardMaterial({ color: 0xffc107, metalness: 1, roughness: 0.2, emissive: 0x6b4a00 });
+      const monetyPul = [];
+      for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(monetaGeo, monetaMat); m.visible = false; m.castShadow = true; sc.add(m); monetyPul.push(m); }
+      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      G3 = { sc, solnce, dorogaTex, dekor, pul, monetyPul, igrokM };
+      return G3;
+    }
+    function novayaGonka() {
+      const m = mirGonki();
+      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      m.pul.forEach((p) => { p.visible = false; p.userData.vlad = null; });
+      kamera.fov = 62; kamera.updateProjectionMatrix();
+      return { x: 200, skor: 5 + sohr.skorost, put: 0, sdvig: 0, mashiny: [], monety: [], tik: 0 };
+    }
+    function obnovitGonku(k) {
+      const g = s;
+      g.tik += k;
+      g.skor += 0.004 * k;
+      const upr = 3 + sohr.upr * 0.8;
+      if (klav.left) g.x -= upr * k;
+      if (klav.right) g.x += upr * k;
+      g.x = Math.max(70, Math.min(330, g.x));
+      g.put += g.skor * k / 10;
+      g.sdvig = (g.sdvig + g.skor * k) % 80;
+      if (Math.random() < 0.02 * k + g.skor / 4000) {
+        const x = POLOSY[Math.floor(Math.random() * POLOSY.length)];
+        if (!g.mashiny.some((m) => Math.abs(m.x - x) < 30 && m.y < 60))
+          g.mashiny.push({ x, y: -60, v: 2 + Math.random() * 2, c: CVETA[Math.floor(Math.random() * CVETA.length)].c });
+      }
+      if (Math.random() < 0.012 * k) g.monety.push({ x: POLOSY[Math.floor(Math.random() * POLOSY.length)], y: -30 });
+      g.mashiny.forEach((m) => (m.y += (g.skor - m.v) * k));
+      g.monety.forEach((m) => (m.y += g.skor * k));
+      g.mashiny = g.mashiny.filter((m) => m.y < VYS + 60);
+      g.monety = g.monety.filter((m) => {
+        if (Math.abs(m.x - g.x) < 24 && Math.abs(m.y - 560) < 34) { zarabotano += 5; zvukMoneta(); return false; }
+        return m.y < VYS + 30;
+      });
+      if (g.mashiny.some((m) => Math.abs(m.x - g.x) < 29 && Math.abs(m.y - 560) < 44)) {
+        zvukUdar();
+        const metry = Math.floor(g.put);
+        zarabotano += Math.floor(metry / 50);
+        const novyi = metry > sohr.rekord.gonka;
+        if (novyi) sohr.rekord.gonka = metry;
+        konec("GAME OVER", "💥 Авария! Ты проехал <b>" + metry + " м</b>" + (novyi ? "<br>🏆 НОВЫЙ РЕКОРД!" : "<br>Рекорд: " + sohr.rekord.gonka + " м"), false);
+      }
+    }
+    // В гонке игрок всегда в точке y=560 (z = 0 в 3D), а мир движется к нему.
+    const zGonki = (y) => (y - 560) / 10;
+    function risovatGonku(k) {
+      const g = s, m = G3, px = v3x(g.x);
+      m.dorogaTex.offset.y = g.sdvig / 80;
+      const shag = g.skor * k / 10;
+      m.dekor.forEach((o) => { o.position.z += shag; if (o.position.z > 22) o.position.z -= 170; });
+      // соперники: каждой машине из логики — своя 3D-машина из бассейна
+      m.pul.forEach((p) => { if (p.userData.vlad && !g.mashiny.includes(p.userData.vlad)) { p.userData.vlad = null; p.visible = false; } });
+      g.mashiny.forEach((ms) => {
+        if (!ms.model) {
+          ms.model = m.pul.find((p) => !p.userData.vlad);
+          if (!ms.model) return;
+          ms.model.userData.vlad = ms; perekrasit(ms.model, ms.c); ms.model.visible = true;
+        }
+        ms.model.position.set(v3x(ms.x), 0, zGonki(ms.y)); ms.model.rotation.y = 0;
+        animirovatMashinu(ms.model, ms.v * k / 10 * 3, 0);
+      });
+      m.monetyPul.forEach((o) => (o.visible = false));
+      g.monety.slice(0, m.monetyPul.length).forEach((mn, i) => {
+        const o = m.monetyPul[i]; o.visible = true;
+        o.position.set(v3x(mn.x), 0.9 + Math.sin(g.tik * 0.1 + i) * 0.15, zGonki(mn.y)); o.rotation.y = g.tik * 0.08;
+      });
+      igrok.position.set(px, 0, 0); igrok.rotation.y = -rulKlav() * 0.12;
+      animirovatMashinu(igrok, g.skor * k / 10 * 3, rulKlav(), rulKlav() * 0.05);
+      // камера едет сзади-сверху, при большой скорости «объектив» расширяется
+      kamera.position.lerp(new THREE.Vector3(px * 0.8, 6.2, 12), 0.15);
+      kamera.lookAt(px * 0.6, 0.4, -16);
+      kamera.fov += (58 + g.skor * 1.3 - kamera.fov) * 0.05; kamera.updateProjectionMatrix();
+      m.solnce.position.set(px + 14, 30, 6); m.solnce.target.position.set(px, 0, -10);
+      hud(["📏 " + Math.floor(g.put) + " м", "⚡ " + Math.round(g.skor * 20) + " км/ч", "🪙 " + zarabotano]);
+    }
+
+    // ================= 8) РЕЖИМ «ПАРКОВКА» =================
+    const avto = (x, y, gor, c = "#78909c") => (gor ? { x, y, w: 50, h: 30, mashina: c } : { x, y, w: 30, h: 50, mashina: c });
+    const UROVNI = [
+      { start: [200, 560, 0], mesto: { x: 172, y: 70, w: 56, h: 72 },
+        prep: [avto(120, 80), avto(250, 80)] },
+      { start: [200, 560, 0], mesto: { x: 60, y: 60, w: 50, h: 70 },
+        prep: [avto(15, 70, false, "#c62828"), avto(125, 70), avto(180, 70), { x: 170, y: 300, w: 60, h: 40 }] },
+      { start: [80, 560, 0], mesto: { x: 316, y: 270, w: 76, h: 46 },
+        prep: [avto(330, 190, true, "#1565c0"), avto(330, 336, true), { x: 150, y: 380, w: 40, h: 40 }] },
+      { start: [200, 580, 0], mesto: { x: 177, y: 40, w: 46, h: 66 },
+        prep: [avto(140, 48), avto(230, 48, false, "#ef6c00"), { x: 0, y: 220, w: 230, h: 30 }, { x: 170, y: 380, w: 230, h: 30 }] },
+      { start: [60, 590, 0], mesto: { x: 322, y: 60, w: 70, h: 44 },
+        prep: [avto(338, 8, true, "#6a1b9a"), avto(338, 114, true), { x: 90, y: 160, w: 310, h: 26 }, { x: 0, y: 330, w: 300, h: 26 },
+               { x: 120, y: 470, w: 280, h: 26 }] }
+    ];
+    let tekUroven = 1, P3 = null;
+    function mirParkovki() {
+      if (P3) return P3;
+      const sc = new THREE.Scene();
+      sc.background = new THREE.Color(0xa7d8f5); sc.fog = new THREE.Fog(0xa7d8f5, 70, 160);
+      sc.environment = render.env;
+      svet(sc, { razmer: 40 });
+      const polTex = tekstura(400, 640, (c, w, h) => {
+        c.fillStyle = "#8a9399"; c.fillRect(0, 0, w, h); shum(c, w, h, 6000, ["#959ea4", "#7d868c", "#a0a8ad"]);
+        c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 2;
+        for (let x = 40; x < w; x += 40) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+      });
+      const pol = new THREE.Mesh(new THREE.PlaneGeometry(40, 64).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: polTex, roughness: 0.9 }));
+      pol.receiveShadow = true; sc.add(pol);
+      const vokrug = new THREE.Mesh(new THREE.PlaneGeometry(300, 300).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x4e8f45, roughness: 1 }));
+      vokrug.position.y = -0.05; vokrug.receiveShadow = true; sc.add(vokrug);
+      // бордюр по краю площадки (удар о край = авария, как в логике)
+      const bord = new THREE.MeshStandardMaterial({ color: 0xffca28, roughness: 0.6 });
+      [[0, -32.3, 40.6, 0.6], [0, 32.3, 40.6, 0.6], [-20.3, 0, 0.6, 65], [20.3, 0, 0.6, 65]].forEach(([x, z, w, d]) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), bord); b.position.set(x, 0.25, z); b.castShadow = b.receiveShadow = true; sc.add(b);
+      });
+      for (let i = 0; i < 16; i++) {
+        const d = derevo(), ugol = (i / 16) * Math.PI * 2;
+        d.position.set(Math.cos(ugol) * 30, 0, Math.sin(ugol) * 42); sc.add(d);
+      }
+      const uroven = new THREE.Group(); sc.add(uroven);
+      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      P3 = { sc, uroven, igrokM, mestoMat: null };
+      return P3;
+    }
+    const polosatyiTex = () => tekstura(64, 64, (c, w, h) => {
+      c.fillStyle = "#212121"; c.fillRect(0, 0, w, h); c.fillStyle = "#ffca28";
+      for (let i = -64; i < 128; i += 32) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i + 16, 0); c.lineTo(i + 16 - 64, 64); c.lineTo(i - 64, 64); c.fill(); }
+    }, [2, 1]);
+    function novayaParkovka() {
+      const u = UROVNI[tekUroven - 1], m = mirParkovki();
+      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      m.uroven.clear();
+      u.prep.forEach((p) => {
+        if (p.mashina) {
+          const mm = sozdatMashinu(p.mashina, TIPY_SPISOK[(p.x + p.y) % 2]);
+          postavit(mm, p.x + p.w / 2, p.y + p.h / 2, p.w > p.h ? Math.PI / 2 : 0); m.uroven.add(mm);
+        } else {
+          const b = new THREE.Mesh(new THREE.BoxGeometry(p.w / 10, 1.3, p.h / 10), new THREE.MeshStandardMaterial({ map: polosatyiTex(), roughness: 0.7 }));
+          b.position.set(v3x(p.x + p.w / 2), 0.65, v3z(p.y + p.h / 2)); b.castShadow = b.receiveShadow = true; m.uroven.add(b);
+        }
+      });
+      const mm = u.mesto;
+      const mestoTex = tekstura(mm.w * 4, mm.h * 4, (c, w, h) => {
+        c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(0, 0, w, h);
+        c.strokeStyle = "#fff"; c.lineWidth = 10; c.setLineDash([24, 16]); c.strokeRect(6, 6, w - 12, h - 12);
+        c.fillStyle = "#fff"; c.font = "bold " + Math.min(w, h) * 0.55 + "px Arial"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.fillText("P", w / 2, h / 2 + 4);
+      });
+      m.mestoMat = new THREE.MeshBasicMaterial({ map: mestoTex, color: 0x69f0ae, transparent: true, opacity: 0.85 });
+      const mesto = new THREE.Mesh(new THREE.PlaneGeometry(mm.w / 10, mm.h / 10).rotateX(-Math.PI / 2), m.mestoMat);
+      mesto.position.set(v3x(mm.x + mm.w / 2), 0.03, v3z(mm.y + mm.h / 2)); m.uroven.add(mesto);
+      // светящийся столбик над местом — видно издалека
+      m.mayak = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3, 8),
+        new THREE.MeshStandardMaterial({ color: 0x69f0ae, emissive: 0x69f0ae, emissiveIntensity: 2, transparent: true, opacity: 0.6 }));
+      m.mayak.position.set(mesto.position.x, 1.5, mesto.position.z); m.uroven.add(m.mayak);
+      kamera.fov = 55; kamera.updateProjectionMatrix();
+      kamera.position.set(0, 66, 22); kamera.lookAt(0, 0, -2);
+      return { u, m: { x: u.start[0], y: u.start[1], a: u.start[2], v: 0 }, derzhim: 0, rul: 0 };
+    }
+    function obnovitParkovku(k) {
+      const { m, u } = s;
+      const maxV = 1.6 + sohr.skorost * 0.15;
+      if (klav.up) m.v += 0.05 * k; else if (klav.down) m.v -= 0.05 * k; else m.v *= Math.pow(0.94, k);
+      m.v = Math.max(-maxV * 0.7, Math.min(maxV, m.v));
+      const povorot = (0.035 + sohr.upr * 0.004) * k * Math.min(1, Math.abs(m.v) / 1.2) * Math.sign(m.v);
+      if (klav.left) m.a -= povorot;
+      if (klav.right) m.a += povorot;
+      m.x += Math.sin(m.a) * m.v * k; m.y -= Math.cos(m.a) * m.v * k;
+      if (udarilas(m, u.prep)) { zvukUdar(); return konec("GAME OVER", "💥 Бах! Ты задел препятствие.", false); }
+      const fx = Math.sin(m.a), fy = -Math.cos(m.a), rx = Math.cos(m.a), ry = Math.sin(m.a);
+      const vnutri = [[-12, -23], [12, -23], [-12, 23], [12, 23]].every(([p, q]) => {
+        const x = m.x + rx * p - fx * q, y = m.y + ry * p - fy * q, mm = u.mesto;
+        return x > mm.x && x < mm.x + mm.w && y > mm.y && y < mm.y + mm.h;
+      });
+      s.derzhim = vnutri && Math.abs(m.v) < 0.15 ? s.derzhim + k : 0;
+      if (s.derzhim > 50) {
+        zarabotano = 40 * tekUroven;
+        if (tekUroven >= sohr.park) sohr.park = Math.min(tekUroven + 1, UROVNI.length + 1);
+        const posled = tekUroven >= UROVNI.length;
+        konec("🅿️ ОТЛИЧНО!", posled ? "🏆 Ты прошёл все уровни парковки!" : "Уровень " + tekUroven + " пройден!", true, !posled);
+      }
+    }
+    function risovatParkovku(k) {
+      const { m } = s, p = P3, gotov = Math.min(1, s.derzhim / 50);
+      postavit(igrok, m.x, m.y, m.a);
+      animirovatMashinu(igrok, m.v * k / 10 * 3, rulKlav());
+      p.mestoMat.opacity = 0.55 + gotov * 0.45 + Math.sin(performance.now() / 250) * 0.1;
+      p.mestoMat.color.setHSL(0.42, 0.9, 0.5 + gotov * 0.25);
+      p.mayak.scale.y = 1 + gotov * 2;
+      // камера немного следит за машиной, но всю площадку видно
+      kamera.position.lerp(new THREE.Vector3(v3x(m.x) * 0.2, 66, 22 + v3z(m.y) * 0.2), 0.05);
+      kamera.lookAt(v3x(m.x) * 0.2, 0, v3z(m.y) * 0.2 - 2);
+      hud(["🅿️ Уровень " + tekUroven + "/" + UROVNI.length, gotov > 0 ? "⏳ " + Math.round(gotov * 100) + "%" : "Встань на P и остановись"]);
+    }
+
+    // ================= 9) РЕЖИМ «ДРИФТ» (ночь, фонари) =================
+    const OSTROV = [{ x: 140, y: 230, w: 120, h: 180 }];
+    let D3 = null;
+    const MAX_SLEDOV = 1600;
+    function mirDrifta() {
+      if (D3) return D3;
+      const sc = new THREE.Scene();
+      sc.background = new THREE.Color(0x0a0f1e); sc.fog = new THREE.Fog(0x0a0f1e, 45, 110);
+      sc.environment = render.env;
+      svet(sc, { yarkost: 0.9, nebo: 0.35, cvetNeba: 0x6f7dff, razmer: 40 });
+      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = "#26292f"; c.fillRect(0, 0, w, h); shum(c, w, h, 3000, ["#30343b", "#1e2025", "#383c43"]); }, [6, 10]);
+      const pol = new THREE.Mesh(new THREE.PlaneGeometry(40, 64).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: asfaltTex, roughness: 0.75, metalness: 0.1 }));
+      pol.receiveShadow = true; sc.add(pol);
+      const vokrug = new THREE.Mesh(new THREE.PlaneGeometry(300, 300).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x111418 }));
+      vokrug.position.y = -0.05; sc.add(vokrug);
+      // красно-белые отбойники по краю
+      const bel = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }), kras = new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.5 });
+      const blok = new THREE.BoxGeometry(2, 0.9, 0.6), blokB = new THREE.BoxGeometry(0.6, 0.9, 2);
+      for (let i = 0; i < 20; i++) [-32.3, 32.3].forEach((z) => { const b = new THREE.Mesh(blok, i % 2 ? bel : kras); b.position.set(-19 + i * 2, 0.45, z); b.castShadow = true; sc.add(b); });
+      for (let i = 0; i < 32; i++) [-20.3, 20.3].forEach((x) => { const b = new THREE.Mesh(blokB, i % 2 ? bel : kras); b.position.set(x, 0.45, -31 + i * 2); b.castShadow = true; sc.add(b); });
+      // остров-клумба с неоновой надписью
+      const o = OSTROV[0];
+      const ostrov = new THREE.Mesh(new RoundedBoxGeometry(o.w / 10, 0.5, o.h / 10, 3, 0.4), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 1 }));
+      ostrov.position.set(v3x(o.x + o.w / 2), 0.25, v3z(o.y + o.h / 2)); ostrov.receiveShadow = true; sc.add(ostrov);
+      const neonTex = tekstura(512, 256, (c, w, h) => {
+        c.font = "bold 150px Arial"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.shadowColor = "#ff2bd6"; c.shadowBlur = 30; c.fillStyle = "#ff7be8"; c.fillText("DRIFT", w / 2, h / 2);
+      });
+      const nadpis = new THREE.Mesh(new THREE.PlaneGeometry(11, 5.5).rotateX(-Math.PI / 2).rotateY(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ map: neonTex, transparent: true }));
+      nadpis.position.set(ostrov.position.x, 0.52, ostrov.position.z); sc.add(nadpis);
+      const neonRamka = new THREE.Mesh(new THREE.BoxGeometry(o.w / 10 + 0.3, 0.12, o.h / 10 + 0.3),
+        new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 2 }));
+      neonRamka.position.set(ostrov.position.x, 0.06, ostrov.position.z); sc.add(neonRamka);
+      // фонари по углам — настоящие источники света
+      [[-18, -30], [18, -30], [-18, 30], [18, 30], [-18, 0], [18, 0]].forEach(([x, z]) => {
+        const f = fonar(0xffd59a); f.position.set(x + (x < 0 ? -2.5 : 2.5), 0, z); if (x > 0) f.rotation.y = Math.PI; sc.add(f);
+        const l = new THREE.PointLight(0xffc77a, 140, 26, 2); l.position.set(x + (x < 0 ? -1.3 : 1.3), 5.6, z); sc.add(l);
+      });
+      // следы шин: одна «пачка» из 1600 тёмных полосок (InstancedMesh — рисуется очень быстро)
+      const sledy = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.32, 0.7).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false }), MAX_SLEDOV);
+      const nol = new THREE.Matrix4().makeScale(0, 0, 0);
+      for (let i = 0; i < MAX_SLEDOV; i++) sledy.setMatrixAt(i, nol);
+      sledy.position.y = 0.02; sc.add(sledy);
+      // дым из-под колёс
+      const dymTex = tekstura(64, 64, (c) => { const g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+        g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = g; c.fillRect(0, 0, 64, 64); });
+      const dym = [];
+      for (let i = 0; i < 60; i++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dymTex, color: 0xcfd8dc, transparent: true, opacity: 0, depthWrite: false }));
+        sp.userData.zhizn = 0; sc.add(sp); dym.push(sp);
+      }
+      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      D3 = { sc, sledy, dym, igrokM, sledN: 0 };
+      return D3;
+    }
+    function novyiDrift() {
+      const m = mirDrifta();
+      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      const nol = new THREE.Matrix4().makeScale(0, 0, 0);
+      for (let i = 0; i < MAX_SLEDOV; i++) m.sledy.setMatrixAt(i, nol);
+      m.sledy.instanceMatrix.needsUpdate = true; m.sledN = 0;
+      m.dym.forEach((d) => { d.userData.zhizn = 0; d.material.opacity = 0; });
+      kamera.fov = 60; kamera.updateProjectionMatrix();
+      kamera.position.set(v3x(260), 7, v3z(540));
+      return { m: { x: 200, y: 540, a: -Math.PI / 2, vx: 0, vy: 0 }, ochki: 0, kombo: 0, vremya: 60 * 60, novyeSledy: [], zanos: 0 };
+    }
+    function obnovitDrift(k) {
+      const d = s, m = d.m;
+      const fx = Math.sin(m.a), fy = -Math.cos(m.a), rx = Math.cos(m.a), ry = Math.sin(m.a);
+      let vperyod = m.vx * fx + m.vy * fy, vbok = m.vx * rx + m.vy * ry;
+      const moshch = 0.11 + sohr.skorost * 0.015;
+      if (klav.up) vperyod += moshch * k;
+      if (klav.down) vperyod -= moshch * 1.3 * k;
+      vperyod *= Math.pow(0.988, k);
+      vbok *= Math.pow(klav.hand ? 0.985 : 0.9 - sohr.upr * 0.01, k);   // ручник = колёса меньше держат → занос
+      const rul = (0.045 + sohr.upr * 0.004) * Math.min(1, Math.abs(vperyod) / 3) * Math.sign(vperyod) * k;
+      if (klav.left) m.a -= rul;
+      if (klav.right) m.a += rul;
+      m.vx = fx * vperyod + rx * vbok; m.vy = fy * vperyod + ry * vbok;
+      const px = m.x, py = m.y;
+      m.x += m.vx * k; m.y += m.vy * k;
+      if (udarilas(m, OSTROV)) {
+        m.x = px; m.y = py; m.vx *= -0.3; m.vy *= -0.3;
+        if (d.kombo > 0) zvukUdar();
+        d.kombo = 0;
+      }
+      const skor = Math.hypot(m.vx, m.vy), zanos = Math.abs(vbok);
+      d.zanos = vbok; d.skor = skor;
+      if (skor > 2.5 && zanos > 1.2) {
+        d.kombo += zanos * k * 0.05;
+        d.ochki += Math.round(zanos * skor * 0.5 * (1 + Math.min(d.kombo, 5)) * k);
+        d.novyeSledy.push([m.x - fx * 14 - rx * 12, m.y - fy * 14 - ry * 12, m.a], [m.x - fx * 14 + rx * 12, m.y - fy * 14 + ry * 12, m.a]);
+      } else d.kombo = Math.max(0, d.kombo - 0.02 * k);
+      d.vremya -= k;
+      if (d.vremya <= 0) {
+        zarabotano = Math.floor(d.ochki / 100);
+        const novyi = d.ochki > sohr.rekord.drift;
+        if (novyi) sohr.rekord.drift = d.ochki;
+        konec("⏱️ ВРЕМЯ!", "🌀 Очки дрифта: <b>" + d.ochki + "</b>" + (novyi ? "<br>🏆 НОВЫЙ РЕКОРД!" : "<br>Рекорд: " + sohr.rekord.drift), true);
+      }
+    }
+    const vrem = new THREE.Matrix4(), vremQ = new THREE.Quaternion(), vremV = new THREE.Vector3(), ed = new THREE.Vector3(1, 1, 1);
+    function risovatDrift(k) {
+      const d = s, m = D3, mm = d.m;
+      // новые следы шин → в «пачку»; старые по кругу заменяются новыми
+      d.novyeSledy.forEach(([x, y, a]) => {
+        vremQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a);
+        vrem.compose(vremV.set(v3x(x), 0, v3z(y)), vremQ, ed);
+        m.sledy.setMatrixAt(m.sledN % MAX_SLEDOV, vrem); m.sledN++;
+        const dym = m.dym.find((p) => p.userData.zhizn <= 0);  // и облачко дыма
+        if (dym && Math.random() < 0.5) {
+          dym.userData.zhizn = 1; dym.position.set(v3x(x), 0.4, v3z(y)); dym.scale.setScalar(0.8);
+        }
+      });
+      if (d.novyeSledy.length) m.sledy.instanceMatrix.needsUpdate = true;
+      d.novyeSledy.length = 0;
+      m.dym.forEach((p) => {
+        if (p.userData.zhizn <= 0) return;
+        p.userData.zhizn -= 0.012 * k;
+        p.position.y += 0.03 * k; p.scale.multiplyScalar(1 + 0.025 * k);
+        p.material.opacity = Math.max(0, p.userData.zhizn * 0.45);
+      });
+      postavit(igrok, mm.x, mm.y, mm.a);
+      animirovatMashinu(igrok, (d.skor || 0) * k / 10 * 3, rulKlav(), Math.max(-0.08, Math.min(0.08, -(d.zanos || 0) * 0.02)));
+      // камера летит за машиной сзади
+      const fx = Math.sin(mm.a), fy = -Math.cos(mm.a);
+      const cel = new THREE.Vector3(v3x(mm.x - fx * 110), 7.5, v3z(mm.y - fy * 110));
+      kamera.position.lerp(cel, 0.06 * k);
+      kamera.position.y = 7.5;
+      kamera.lookAt(v3x(mm.x + fx * 30), 0.5, v3z(mm.y + fy * 30));
+      hud(["⏱️ " + Math.ceil(d.vremya / 60) + " с", "🌀 " + d.ochki, d.kombo > 0.3 ? "🔥 x" + (1 + Math.min(d.kombo, 5)).toFixed(1) : "Газ + руль + ✋ ручник"]);
+    }
+
+
+    // ================= 11) РЕЖИМ «ГОРОД» — открытый мир, миссии, можно выйти из машины =================
+    // Здесь всё считаем сразу в метрах 3D-мира (не в пикселях). Город 200×200 м, дороги — сетка.
+    const DOROGI = [-100, -60, -20, 20, 60, 100];          // линии дорог по X и по Z (ширина дороги 10 м)
+    const GRANICA = 104;
+    let C3 = null;
+    // «случайные» числа, которые каждый раз одинаковые — город всегда строится одинаково
+    let zerno = 7; const sluch = () => ((zerno = (zerno * 16807) % 2147483647) / 2147483647);
+
+    // фасад дома: стена + окна. Вторая текстура — какие окна горят (светятся вечером)
+    function fasad(cvet, cvetOkna) {
+      const okna = [];
+      for (let i = 0; i < 16; i++) okna.push(sluch() < 0.45);
+      const ris = (svetit) => (c, w, h) => {
+        c.fillStyle = svetit ? "#000" : cvet; c.fillRect(0, 0, w, h);
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+          const gorit = okna[i * 4 + j];
+          c.fillStyle = svetit ? (gorit ? "#ffcf7a" : "#000") : (gorit ? "#ffe2a8" : cvetOkna);
+          c.fillRect(i * 32 + 7, j * 32 + 6, 18, 20);
+        }
+      };
+      const t1 = tekstura(128, 128, ris(false)), t2 = tekstura(128, 128, ris(true));
+      [t1, t2].forEach((t) => (t.wrapS = t.wrapT = THREE.RepeatWrapping));
+      return new THREE.MeshStandardMaterial({ map: t1, emissiveMap: t2, emissive: 0xffffff, emissiveIntensity: 1.2, roughness: 0.75 });
+    }
+    // у коробки 6 граней; растягиваем «узор окон» по размеру грани, чтобы окна не были огромными
+    function korobkaDoma(w, h, d) {
+      const g = new THREE.BoxGeometry(w, h, d), uv = g.attributes.uv;
+      const razm = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+      for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) {
+        const i = f * 4 + v; uv.setXY(i, uv.getX(i) * razm[f][0] / 4, uv.getY(i) * razm[f][1] / 4);
+      }
+      return g;
+    }
+    // человечек: голова, тело, руки и ноги (руки-ноги качаются при ходьбе)
+    function sozdatCheloveka(rubashka = 0x1e88e5, shtany = 0x263238, kozha = 0xffcc99) {
+      const g = new THREE.Group(), m = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
+      const telo = set(new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.75, 0.36, 3, 0.12), m(rubashka)), 0, 1.22, 0);
+      const golova = set(new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 14), m(kozha)), 0, 1.82, 0);
+      const volosy = set(new THREE.Mesh(new THREE.SphereGeometry(0.255, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m(0x2b1b10)), 0, 1.86, 0.02);
+      const noga = (x) => { const p = set(new THREE.Group(), x, 0.86, 0); p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.86, 0.24, 2, 0.08), m(shtany)), 0, -0.43, 0)); return p; };
+      const ruka = (x) => { const p = set(new THREE.Group(), x, 1.55, 0); p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.17, 0.7, 0.18, 2, 0.07), m(rubashka)), 0, -0.33, 0)); return p; };
+      const nogi = [noga(-0.15), noga(0.15)], ruki = [ruka(-0.42), ruka(0.42)];
+      g.add(telo, golova, volosy, ...nogi, ...ruki);
+      g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      g.userData = { nogi, ruki };
+      return g;
+    }
+    function shagat(chel, faza, sila) {                       // анимация ходьбы
+      const u = chel.userData, a = Math.sin(faza) * 0.7 * sila;
+      u.nogi[0].rotation.x = a; u.nogi[1].rotation.x = -a; u.ruki[0].rotation.x = -a; u.ruki[1].rotation.x = a;
+    }
+    // луч-маркер цели (как в больших играх): светящийся столб + кольцо на земле
+    function mayakCeli(cvet, radius = 3) {
+      const g = new THREE.Group();
+      const luch = set(new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.8, radius, 40, 24, 1, true),
+        new THREE.MeshBasicMaterial({ color: cvet, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })), 0, 20, 0);
+      const kolco = new THREE.Mesh(new THREE.RingGeometry(radius - 0.35, radius, 40).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: cvet, transparent: true, opacity: 0.9 }));
+      kolco.position.y = 0.08; g.add(luch, kolco); g.visible = false;
+      return g;
+    }
+
+    function mirGoroda() {
+      if (C3) return C3;
+      zerno = 7;
+      const sc = new THREE.Scene();
+      sc.fog = new THREE.Fog(0xe9b98f, 120, 330);
+      // небо с закатом (Sky) — и его же отражают машины
+      const nebo = new Sky(); nebo.scale.setScalar(900);
+      const solnceNapr = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(82), THREE.MathUtils.degToRad(210));
+      Object.assign(nebo.material.uniforms.turbidity, { value: 6 }); nebo.material.uniforms.rayleigh.value = 2.2;
+      nebo.material.uniforms.mieCoefficient.value = 0.006; nebo.material.uniforms.mieDirectionalG.value = 0.85;
+      nebo.material.uniforms.sunPosition.value.copy(solnceNapr);
+      sc.add(nebo);
+      sc.environment = render.env;
+      sc.add(new THREE.HemisphereLight(0xffd8b0, 0x40506a, 0.45));
+      const solnce = new THREE.DirectionalLight(0xffc48a, 2.0);
+      solnce.castShadow = true; solnce.shadow.mapSize.set(2048, 2048); solnce.shadow.bias = -0.0004;
+      Object.assign(solnce.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 300 });
+      sc.add(solnce, solnce.target);
+
+      // земля: асфальт внутри города, трава снаружи
+      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = "#3a3d42"; c.fillRect(0, 0, w, h); shum(c, w, h, 3500, ["#44474d", "#303338", "#4d5056"]); }, [40, 40]);
+      const asfalt = new THREE.Mesh(new THREE.PlaneGeometry(220, 220).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: asfaltTex, roughness: 0.8 }));
+      asfalt.receiveShadow = true; sc.add(asfalt);
+      const travaTex = tekstura(128, 128, (c, w, h) => { c.fillStyle = "#4f8a3c"; c.fillRect(0, 0, w, h); shum(c, w, h, 1500, ["#5c9c46", "#437a33", "#6aa851"]); }, [80, 80]);
+      const zemlya = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: travaTex, roughness: 1 }));
+      zemlya.position.y = -0.03; zemlya.receiveShadow = true; sc.add(zemlya);
+
+      // разметка: жёлтые штрихи по центру каждой дороги (одна «пачка» — InstancedMesh)
+      const shtrih = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.3, 2.2).rotateX(-Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0xffd600, roughness: 0.6 }), 1300);
+      const mt = new THREE.Matrix4(), povorot90 = new THREE.Matrix4().makeRotationY(Math.PI / 2);
+      let n = 0;
+      DOROGI.forEach((L) => { for (let t = -104; t <= 104; t += 5) {
+        if (DOROGI.some((q) => Math.abs(q - t) < 6)) continue;            // на перекрёстках разметки нет
+        shtrih.setMatrixAt(n++, mt.makeTranslation(L, 0.03, t));
+        shtrih.setMatrixAt(n++, new THREE.Matrix4().makeTranslation(t, 0.03, L).multiply(povorot90));
+      } });
+      shtrih.count = n; sc.add(shtrih);
+
+      const stenyDomov = [];                                    // прямоугольники, через которые нельзя проехать
+      const stili = [fasad("#d7c3a3", "#5b6e7c"), fasad("#8fa3b5", "#2f3e4c"), fasad("#b05a43", "#3d4b55"), fasad("#5d8fb8", "#1e3446"), fasad("#e8e4da", "#58636b")];
+      const krysha = new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.9 });
+      const trotuar = new THREE.MeshStandardMaterial({ color: 0xb9b5ad, roughness: 0.95 });
+      const parki = [[0, 4], [2, 2]];                          // в этих кварталах — парки
+      for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+        const cx = -80 + i * 40, cz = -80 + j * 40;
+        const baza = new THREE.Mesh(new RoundedBoxGeometry(30.5, 0.3, 30.5, 2, 0.12), trotuar);
+        baza.position.set(cx, 0.15, cz); baza.receiveShadow = true; sc.add(baza);
+        if (parki.some(([a, b]) => a === i && b === j)) {
+          const gazon = new THREE.Mesh(new THREE.PlaneGeometry(27, 27).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: travaTex, roughness: 1 }));
+          gazon.position.set(cx, 0.32, cz); gazon.receiveShadow = true; sc.add(gazon);
+          for (let t = 0; t < 9; t++) { const d = derevo(); d.position.set(cx - 11 + sluch() * 22, 0.3, cz - 11 + sluch() * 22); sc.add(d); }
+          if (i === 2) {                                        // фонтан в центре города
+            const f = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.3, 0.8, 32), trotuar); f.position.set(cx, 0.7, cz); f.castShadow = true; sc.add(f);
+            const voda = new THREE.Mesh(new THREE.CircleGeometry(2.7, 32).rotateX(-Math.PI / 2),
+              new THREE.MeshStandardMaterial({ color: 0x4fc3f7, metalness: 0.3, roughness: 0.05, emissive: 0x0a4a66 }));
+            voda.position.set(cx, 1.12, cz); sc.add(voda);
+            stenyDomov.push({ x: cx - 3.3, z: cz - 3.3, w: 6.6, d: 6.6 });
+          }
+          continue;
+        }
+        // 4 участка в квартале: на каждом дом (или дерево)
+        [[-7.5, -7.5], [7.5, -7.5], [-7.5, 7.5], [7.5, 7.5]].forEach(([dx, dz]) => {
+          if (sluch() < 0.12) { const d = derevo(); d.position.set(cx + dx, 0.3, cz + dz); sc.add(d); return; }
+          const w = 10 + sluch() * 3, d = 10 + sluch() * 3;
+          const blizko = 1 - Math.hypot(cx, cz) / 140;          // ближе к центру — дома выше
+          const h = 6 + sluch() * 14 + blizko * 26 * sluch();
+          const st = stili[Math.floor(sluch() * stili.length)];
+          const dom = new THREE.Mesh(korobkaDoma(w, h, d), [st, st, krysha, krysha, st, st]);
+          dom.position.set(cx + dx, 0.3 + h / 2, cz + dz); dom.castShadow = dom.receiveShadow = true; sc.add(dom);
+          if (sluch() < 0.6) {                                  // кондиционеры на крыше
+            const ac = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1, 1.6), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: 0.5, roughness: 0.4 }));
+            ac.position.set(cx + dx + (sluch() - 0.5) * 4, 0.3 + h + 0.5, cz + dz + (sluch() - 0.5) * 4); ac.castShadow = true; sc.add(ac);
+          }
+          stenyDomov.push({ x: cx + dx - w / 2, z: cz + dz - d / 2, w, d });
+        });
+      }
+      // фонари вдоль дорог (лампы светятся — с красивым свечением «bloom»)
+      for (let i = 0; i < 5; i++) for (let j = 0; j < 6; j++) {
+        const f = fonar(0xffd59a); f.position.set(-80 + i * 40, 0.3, DOROGI[j] + (j < 5 ? 5.6 : -5.6)); f.rotation.y = j < 5 ? Math.PI / 2 : -Math.PI / 2; sc.add(f);
+      }
+      // стена по краю города
+      const ograda = new THREE.MeshStandardMaterial({ map: polosatyiTex(), roughness: 0.7 });
+      [[0, -GRANICA - 1, 212, 2], [0, GRANICA + 1, 212, 2], [-GRANICA - 1, 0, 2, 212], [GRANICA + 1, 0, 2, 212]].forEach(([x, z, w, d]) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, 1.4, d), ograda); b.position.set(x, 0.7, z); b.castShadow = true; sc.add(b);
+      });
+
+      // машины в городе: твоя + припаркованные. В любую можно сесть!
+      const mashiny = [];
+      const dobavit = (x, z, a, cvet, id, tip) => { const model = sozdatMashinu(cvet, tip); sc.add(model); const m = { x, z, a, vx: 0, vz: 0, cvet, model, id }; mashiny.push(m); return m; };
+      dobavit(-17, 60, 0, sohr.cvet, "moya");
+      [[63, -30, 0, "#c62828", null, "sedan"], [-57, 30, Math.PI, "#212121", null, "dzhip"], [30, 63, Math.PI / 2, "#2e7d32", null, "sedan"],
+       [-30, -57, -Math.PI / 2, "#ef6c00", null, "sport"], [97, 10, 0, "#1565c0", null, "dzhip"],
+       [99, -80, 0, "#ffb300", "zoloto", "sport"]].forEach(([x, z, a, c, id, tip]) => dobavit(x, z, a, c, id, tip));
+      mashiny.find((m) => m.id === "zoloto").model.userData.okrashennye.forEach((o) => (o.material = new THREE.MeshPhysicalMaterial({ color: 0xffc107, metalness: 1, roughness: 0.18, clearcoat: 1 })));
+
+      const chelovek = sozdatCheloveka(); chelovek.visible = false; sc.add(chelovek);
+      const passazhir = sozdatCheloveka(0xe91e63, 0x37474f, 0xe0ac69); sc.add(passazhir); passazhir.visible = false;
+      const mayak = mayakCeli(0xffd600, 3.5); sc.add(mayak);
+      const strelka = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 4).rotateX(-Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0xffd600, emissive: 0xffb300, emissiveIntensity: 1.5 }));
+      strelka.visible = false; sc.add(strelka);
+      const monetaGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.12, 24).rotateX(Math.PI / 2);
+      const monetaMat = new THREE.MeshStandardMaterial({ color: 0xffc107, metalness: 1, roughness: 0.2, emissive: 0x8a5a00 });
+      const monety = []; for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(monetaGeo, monetaMat); m.visible = false; m.castShadow = true; sc.add(m); monety.push(m); }
+      C3 = { sc, solnce, solnceNapr, stenyDomov, mashiny, chelovek, passazhir, mayak, strelka, monety };
+      return C3;
+    }
+
+    // ---------- столкновения в городе ----------
+    function vStene(x, z, r) {
+      if (Math.abs(x) > GRANICA - r || Math.abs(z) > GRANICA - r) return true;
+      return C3.stenyDomov.some((p) => {
+        const bx = Math.max(p.x, Math.min(x, p.x + p.w)), bz = Math.max(p.z, Math.min(z, p.z + p.d));
+        return (x - bx) ** 2 + (z - bz) ** 2 < r * r;
+      });
+    }
+    const mashinaUdarilas = (m) => [-1.5, 0, 1.5].some((d) => vStene(m.x + Math.sin(m.a) * d, m.z - Math.cos(m.a) * d, 1.15));
+
+    // ---------- физика машины (как в дрифте, только в метрах) ----------
+    function ehatMashina(m, k, upravlyayu) {
+      const fx = Math.sin(m.a), fz = -Math.cos(m.a), rx = Math.cos(m.a), rz = Math.sin(m.a);
+      let vp = m.vx * fx + m.vz * fz, vb = m.vx * rx + m.vz * rz;
+      const gaz = 0.011 + sohr.skorost * 0.0016;
+      if (upravlyayu && klav.up) vp += gaz * k;
+      if (upravlyayu && klav.down) vp -= (vp > 0 ? gaz * 2.2 : gaz * 0.8) * k;
+      vp *= Math.pow(upravlyayu && (klav.up || klav.down) ? 0.986 : 0.97, k);
+      vp = Math.max(-0.3, vp);
+      vb *= Math.pow(upravlyayu && klav.hand ? 0.975 : 0.82, k);
+      if (upravlyayu) {
+        const rul = (0.034 + sohr.upr * 0.003) * Math.min(1, Math.abs(vp) / 0.25) * Math.sign(vp) * k;
+        if (klav.left) m.a -= rul;
+        if (klav.right) m.a += rul;
+      }
+      m.vx = fx * vp + rx * vb; m.vz = fz * vp + rz * vb;
+      const px = m.x, pz = m.z;
+      m.x += m.vx * k; m.z += m.vz * k;
+      if (mashinaUdarilas(m)) {
+        m.x = px; m.z = pz;
+        if (Math.hypot(m.vx, m.vz) > 0.35 && upravlyayu) zvukUdar();
+        m.vx *= -0.25; m.vz *= -0.25;
+      }
+      m.vp = vp; m.vb = vb;
+    }
+
+    // ---------- миссии ----------
+    // Каждая миссия — список шагов. Шаг: доехать/дойти до точки, собрать монеты или сесть в машину.
+    const MISSII = [
+      { id: "pizza", nazv: "📦 Доставка пиццы", vremya: 100, nagrada: 150, shagi: [
+        { tip: "tochka", x: 60, z: 35, kak: "mashina", tekst: "Забери пиццу в пиццерии" },
+        { tip: "tochka", x: -85, z: -100, kak: "mashina", tekst: "Отвези пиццу клиенту" } ] },
+      { id: "taksi", nazv: "🚕 Такси", vremya: 100, nagrada: 150, shagi: [
+        { tip: "tochka", x: -60, z: 15, kak: "mashina", tekst: "Забери пассажира", passazhir: true },
+        { tip: "tochka", x: 100, z: 80, kak: "mashina", tekst: "Отвези пассажира в центр", vysadit: true } ] },
+      { id: "chekpointy", nazv: "🏁 Контрольные точки", vremya: 75, nagrada: 200, shagi: [
+        [-20, -20], [20, -60], [60, -60], [60, 20], [100, 60], [20, 100]].map(([x, z], i) => ({ tip: "tochka", x, z, kak: "mashina", tekst: "Точка " + (i + 1) + " из 6" })) },
+      { id: "park", nazv: "🪙 Монеты в парке", vremya: 70, nagrada: 120, shagi: [
+        { tip: "tochka", x: -80, z: 60, kak: null, tekst: "Доберись до парка" },
+        { tip: "monety", kak: "peshkom", tekst: "Выйди из машины 🚪 и собери монеты" } ] },
+      { id: "zoloto", nazv: "✨ Золотая машина", vremya: 120, nagrada: 250, shagi: [
+        { tip: "sest", id: "zoloto", tekst: "Найди золотую машину и сядь в неё" },
+        { tip: "tochka", x: -20, z: 100, kak: "zoloto", tekst: "Пригони её в гараж" } ] }
+    ];
+    sohr.missii = sohr.missii || [];
+
+    function novyiGorod() {
+      const c = mirGoroda();
+      scena = c.sc;
+      c.mashiny.forEach((m) => { if (m.id === "moya") perekrasit(m.model, sohr.cvet); });
+      const moya = c.mashiny.find((m) => m.id === "moya");
+      Object.assign(moya, { x: -17, z: 60, a: 0, vx: 0, vz: 0 });
+      c.chelovek.visible = false; c.passazhir.visible = false; c.mayak.visible = false; c.strelka.visible = false;
+      c.monety.forEach((m) => (m.visible = false));
+      kamera.fov = 62; kamera.updateProjectionMatrix();
+      kamera.position.set(-17, 6, 72);
+      $("pult2").style.display = "flex";
+      banner("🏙️ Добро пожаловать в город!<br><small>📋 — миссии · 🚪 — выйти из машины</small>");
+      return { vMashine: moya, chel: { x: 0, z: 0, a: 0, faza: 0 }, missiya: null, tik: 0 };
+    }
+    function nachatMissiyu(i) {
+      const ms = MISSII[i];
+      s.missiya = { ms, shag: 0, vremya: ms.vremya * 60 };
+      zvukMoneta(); banner(ms.nazv + "<br><small>" + ms.shagi[0].tekst + "</small>");
+      podgotovitShag();
+      $("missiiOkno").style.display = "none";
+    }
+    function podgotovitShag() {
+      const c = C3, mi = s.missiya, sh = mi.ms.shagi[mi.shag];
+      c.mayak.visible = sh.tip === "tochka";
+      if (sh.tip === "tochka") c.mayak.position.set(sh.x, 0.1, sh.z);
+      if (sh.passazhir) { c.passazhir.visible = true; c.passazhir.position.set(sh.x - 7, 0.3, sh.z); c.passazhir.rotation.y = -Math.PI / 2; }
+      if (sh.tip === "monety") {
+        mi.monety = c.monety.map((m) => { m.visible = true; m.position.set(-92 + sluch() * 24, 1.2, 67 + sluch() * 24); return m; });
+      }
+    }
+    function gdeIgrok() { return s.vMashine ? { x: s.vMashine.x, z: s.vMashine.z } : s.chel; }
+    function celShaga() {
+      const mi = s.missiya; if (!mi) return null;
+      const sh = mi.ms.shagi[mi.shag];
+      if (sh.tip === "tochka") return { x: sh.x, z: sh.z };
+      if (sh.tip === "sest") { const m = C3.mashiny.find((q) => q.id === sh.id); return { x: m.x, z: m.z }; }
+      if (sh.tip === "monety") { const ost = mi.monety.filter((m) => m.visible); if (!ost.length) return null;
+        const ig = gdeIgrok(); ost.sort((a, b) => Math.hypot(a.position.x - ig.x, a.position.z - ig.z) - Math.hypot(b.position.x - ig.x, b.position.z - ig.z));
+        return { x: ost[0].position.x, z: ost[0].position.z }; }
+    }
+    function proveritMissiyu(k) {
+      const mi = s.missiya; if (!mi) return;
+      mi.vremya -= k;
+      if (mi.vremya <= 0) { zakonchitMissiyu(false); return; }
+      const sh = mi.ms.shagi[mi.shag], ig = gdeIgrok();
+      let gotovo = false;
+      if (sh.tip === "tochka") {
+        const blizko = Math.hypot(ig.x - sh.x, ig.z - sh.z) < 4;
+        const kak = sh.kak === "mashina" ? !!s.vMashine : sh.kak === "peshkom" ? !s.vMashine : sh.kak ? s.vMashine && s.vMashine.id === sh.kak : true;
+        gotovo = blizko && kak;
+        if (blizko && !kak) podskazka(sh.kak === "mashina" || sh.kak === "zoloto" ? "🚗 Сюда нужно приехать на машине" : "🚶 Сюда нужно прийти пешком");
+      }
+      if (sh.tip === "sest") gotovo = s.vMashine && s.vMashine.id === sh.id;
+      if (sh.tip === "monety") {
+        if (!s.vMashine) mi.monety.forEach((m) => { if (m.visible && Math.hypot(m.position.x - ig.x, m.position.z - ig.z) < 1.4) { m.visible = false; zvukMoneta(); } });
+        gotovo = mi.monety.every((m) => !m.visible);
+      }
+      if (!gotovo) return;
+      if (sh.passazhir) C3.passazhir.visible = false;          // пассажир сел в машину
+      if (sh.vysadit) { C3.passazhir.visible = true; C3.passazhir.position.set(sh.x + 7, 0.3, sh.z); }
+      mi.shag++;
+      if (mi.shag >= mi.ms.shagi.length) { zakonchitMissiyu(true); return; }
+      bip(988, 0.12, "triangle", 0.12); bip(1319, 0.15, "triangle", 0.12, 0.1);
+      banner("✅ " + mi.ms.shagi[mi.shag].tekst);
+      podgotovitShag();
+    }
+    function zakonchitMissiyu(uspeh) {
+      const mi = s.missiya; s.missiya = null;
+      C3.mayak.visible = false; C3.strelka.visible = false; C3.monety.forEach((m) => (m.visible = false));
+      if (uspeh) {
+        sohr.monety += mi.ms.nagrada;
+        if (!sohr.missii.includes(mi.ms.id)) sohr.missii.push(mi.ms.id);
+        let dop = "";
+        if (mi.ms.id === "zoloto" && !sohr.kupleno.includes("#ffb300")) { sohr.kupleno.push("#ffb300"); dop = "<br><small>🎁 Открыт ЗОЛОТОЙ цвет в гараже!</small>"; }
+        sohranit(); muzykaPobeda();
+        banner("🏆 МИССИЯ ВЫПОЛНЕНА!<br>🪙 +" + mi.ms.nagrada + dop, 4000);
+      } else { muzykaGameOver(); banner("⏱️ Время вышло! Миссия провалена.<br><small>📋 Попробуй ещё раз</small>", 3500); }
+    }
+    let bannerT = 0;
+    function banner(t, dlit = 2600) { const b = $("banner"); b.innerHTML = t; b.style.opacity = 1; clearTimeout(bannerT); bannerT = setTimeout(() => (b.style.opacity = 0), dlit); }
+    let podskT = 0;
+    function podskazka(t) { if (performance.now() - podskT > 3000) { podskT = performance.now(); banner(t, 1800); } }
+
+    function vyitiIliSest() {
+      if (rezhim !== "gorod" || !s) return;
+      const c = C3;
+      if (s.vMashine) {                                         // выходим: встаём слева от машины
+        const m = s.vMashine;
+        if (Math.hypot(m.vx, m.vz) > 0.25) { podskazka("🛑 Сначала останови машину"); return; }
+        const rx = Math.cos(m.a), rz = Math.sin(m.a);
+        let x = m.x - rx * 2.3, z = m.z - rz * 2.3;
+        if (vStene(x, z, 0.45)) { x = m.x + rx * 2.3; z = m.z + rz * 2.3; }
+        if (vStene(x, z, 0.45)) { podskazka("🚪 Тут не выйти — мешает стена"); return; }
+        Object.assign(s.chel, { x, z, a: m.a });
+        s.vMashine = null; c.chelovek.visible = true;
+        bip(300, 0.1, "square", 0.06);
+      } else {                                                  // садимся в ближайшую машину
+        const ch = s.chel;
+        const bliz = c.mashiny.map((m) => [m, Math.hypot(m.x - ch.x, m.z - ch.z)]).sort((a, b) => a[1] - b[1])[0];
+        if (!bliz || bliz[1] > 4) { podskazka("🚗 Подойди ближе к машине"); return; }
+        s.vMashine = bliz[0]; c.chelovek.visible = false;
+        bip(200, 0.15, "sawtooth", 0.08); bip(140, 0.3, "sawtooth", 0.06, 0.1);   // «врум» мотора
+      }
+    }
+
+    function obnovitGorod(k) {
+      const c = C3;
+      s.tik += k;
+      c.mashiny.forEach((m) => ehatMashina(m, k, m === s.vMashine));
+      if (!s.vMashine) {                                        // идём пешком
+        const ch = s.chel, beg = klav.hand ? 0.24 : 0.12;
+        if (klav.left) ch.a -= 0.06 * k;
+        if (klav.right) ch.a += 0.06 * k;
+        const v = (klav.up ? beg : 0) - (klav.down ? 0.07 : 0);
+        const nx = ch.x + Math.sin(ch.a) * v * k, nz = ch.z - Math.cos(ch.a) * v * k;
+        const vMashinu = c.mashiny.some((m) => Math.hypot(m.x - nx, m.z - nz) < 1.9);
+        if (!vStene(nx, nz, 0.45) && !vMashinu) { ch.x = nx; ch.z = nz; }
+        ch.v = v; ch.faza += Math.abs(v) * 1.6 * k;
+      }
+      proveritMissiyu(k);
+    }
+    function risovatGorod(k) {
+      const c = C3, t = performance.now() / 1000;
+      c.mashiny.forEach((m) => {
+        postavitM(m.model, m.x, m.z, m.a);
+        animirovatMashinu(m.model, (m.vp || 0) * k * 3, m === s.vMashine ? rulKlav() : 0, Math.max(-0.07, Math.min(0.07, -(m.vb || 0) * 0.15)));
+      });
+      const ig = gdeIgrok();
+      if (!s.vMashine) {
+        const ch = s.chel;
+        c.chelovek.position.set(ch.x, 0.3, ch.z); c.chelovek.rotation.y = -ch.a;
+        shagat(c.chelovek, ch.faza, Math.min(1, Math.abs(ch.v || 0) * 8));
+      }
+      // камера: за машиной дальше и выше, за человеком — ближе
+      const a = s.vMashine ? s.vMashine.a : s.chel.a;
+      const dal = s.vMashine ? 11 : 6, vys = s.vMashine ? 5 : 3;
+      const cel = new THREE.Vector3(ig.x - Math.sin(a) * dal, vys, ig.z + Math.cos(a) * dal);
+      kamera.position.lerp(cel, Math.min(1, 0.07 * Math.max(k, 0.5)));
+      kamera.lookAt(ig.x + Math.sin(a) * 4, s.vMashine ? 1 : 1.5, ig.z - Math.cos(a) * 4);
+      // солнце (и его тени) ходит за игроком
+      c.solnce.position.set(ig.x + c.solnceNapr.x * 100, c.solnceNapr.y * 100 + 40, ig.z + c.solnceNapr.z * 100);
+      c.solnce.target.position.set(ig.x, 0, ig.z);
+      // маяк, монеты и стрелка-навигатор
+      c.mayak.children[0].material.opacity = 0.2 + Math.sin(t * 4) * 0.08;
+      c.monety.forEach((m, i) => { if (m.visible) { m.rotation.y = t * 3 + i; m.position.y = 1.2 + Math.sin(t * 3 + i) * 0.2; } });
+      const cl = celShaga();
+      c.strelka.visible = !!cl;
+      if (cl) {
+        c.strelka.position.set(ig.x, s.vMashine ? 3.4 : 2.7, ig.z);
+        c.strelka.lookAt(cl.x, c.strelka.position.y, cl.z);
+      }
+      const mi = s.missiya, stroki = [];
+      if (s.vMashine) stroki.push("⚡ " + Math.round(Math.hypot(s.vMashine.vx, s.vMashine.vz) * 216) + " км/ч");
+      else stroki.push(klav.hand ? "🏃 Бег" : "🚶 Пешком");
+      if (mi) {
+        stroki.push("⏱️ " + Math.ceil(mi.vremya / 60) + " с");
+        stroki.push("🎯 " + mi.ms.shagi[mi.shag].tekst + (cl ? " · " + Math.round(Math.hypot(cl.x - ig.x, cl.z - ig.z)) + " м" : ""));
+      } else stroki.push("📋 Выбери миссию");
+      hud(stroki);
+      $("knRuchnik").innerHTML = s.vMashine ? "✋<br>ручник" : "🏃<br>бег";
+      $("knVyhod").innerHTML = s.vMashine ? "🚪 Выйти" : "🚗 Сесть";
+      miniKarta(ig, a, cl);
+    }
+    function postavitM(obj, x, z, a) { obj.position.set(x, 0, z); obj.rotation.y = -a; }
+
+    // мини-карта в углу: дороги, машины, цель
+    function miniKarta(ig, a, cl) {
+      const mk = $("minikarta"), c = mk.getContext("2d"), S = mk.width, m = S / 220;
+      const px = (x) => (x + 110) * m;
+      c.fillStyle = "rgba(20,30,40,.85)"; c.fillRect(0, 0, S, S);
+      c.fillStyle = "#6b7280"; DOROGI.forEach((L) => { c.fillRect(px(L - 5), px(-105), 10 * m, 210 * m); c.fillRect(px(-105), px(L - 5), 210 * m, 10 * m); });
+      c.fillStyle = "#4f8a3c"; [[0, 4], [2, 2]].forEach(([i, j]) => c.fillRect(px(-95 + i * 40), px(-95 + j * 40), 30 * m, 30 * m));
+      C3.mashiny.forEach((q) => { c.fillStyle = q.id === "zoloto" ? "#ffc107" : "#90caf9"; c.fillRect(px(q.x) - 2, px(q.z) - 2, 4, 4); });
+      if (cl) { c.fillStyle = "#ffd600"; c.beginPath(); c.arc(px(cl.x), px(cl.z), 5, 0, 7); c.fill(); }
+      c.save(); c.translate(px(ig.x), px(ig.z)); c.rotate(a);
+      c.fillStyle = "#ff5252"; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 5); c.lineTo(-5, 5); c.closePath(); c.fill(); c.restore();
+    }
+    function pokazatMissii() {
+      const o = $("missiiOkno"), sp = $("missiiSpisok");
+      sp.innerHTML = "";
+      MISSII.forEach((ms, i) => {
+        const b = document.createElement("button");
+        b.style.cssText = "display:block;width:100%;margin:6px 0;text-align:left";
+        b.innerHTML = ms.nazv + (sohr.missii.includes(ms.id) ? " ✅" : "") + "<br><small style='font-weight:normal'>⏱️ " + ms.vremya + " с · 🪙 " + ms.nagrada + "</small>";
+        b.onclick = () => nachatMissiyu(i);
+        sp.appendChild(b);
+      });
+      o.style.display = "flex";
+    }
+
+    $("knVyhod").onclick = vyitiIliSest;
+    $("knMissii").onclick = pokazatMissii;
+    addEventListener("keydown", (e) => { if (e.code === "KeyE" && !e.repeat) vyitiIliSest(); if (e.code === "KeyM" && rezhim === "gorod" && s) pokazatMissii(); });
+
+    // ================= 10) ИГРОВОЙ ЦИКЛ =================
+    let proshloe = performance.now();
+    function cikl(seichas) {
+      const k = Math.min(2, Math.max(0.1, (seichas - proshloe) / 16.67));
+      proshloe = seichas;
+      if ($("garazh").style.display !== "none") {              // гараж: машина крутится на подиуме
+        vitrina.mashina.rotation.y += 0.008 * k;
+        narisovat(renderVitrina, KOMP.vitr, vitrina.scena, vitrina.kamera);
+      } else if (s && scena) {
+        if (igraIdet) {
+          if (rezhim === "gonka") obnovitGonku(k); else if (rezhim === "parkovka") obnovitParkovku(k); else if (rezhim === "drift") obnovitDrift(k); else obnovitGorod(k);
+        }
+        if (s) {
+          const kk = igraIdet ? k : 0;
+          if (rezhim === "gonka") risovatGonku(kk); else if (rezhim === "parkovka") risovatParkovku(kk); else if (rezhim === "drift") risovatDrift(kk); else risovatGorod(kk);
+          narisovat(render, KOMP.igra, scena, kamera);
+        }
+      }
+      requestAnimationFrame(cikl);
+    }
+    requestAnimationFrame(cikl);
+    risovatGarazh();
+    window.TEST = { start, klav, get s() { return s; }, get igraIdet() { return igraIdet; }, sohr, UROVNI,
+      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, get C3() { return C3; }, vitrina, sozdatMashinu };   // для проверки игры
+  </script>
+</body>
+</html>
