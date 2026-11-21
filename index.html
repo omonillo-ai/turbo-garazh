@@ -75,6 +75,11 @@
     </div>
 
     <div class="karta">
+      <h2>🚘 Выбор машины</h2>
+      <div class="rezhimy" id="vyborMashin" style="grid-template-columns:1fr 1fr 1fr"></div>
+    </div>
+
+    <div class="karta">
       <h2>🏁 Выбери режим</h2>
       <div class="rezhimy">
         <button data-rezhim="gonka">🏁<br>Гонка</button>
@@ -166,7 +171,7 @@
     import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
     // ================= 1) СОХРАНЕНИЕ (localStorage) =================
-    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], rekord: { gonka: 0, drift: 0 }, park: 1 };
+    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], tip: "sport", tipy: ["sport"], rekord: { gonka: 0, drift: 0 }, park: 1 };
     try { Object.assign(sohr, JSON.parse(localStorage.getItem("turboGarazh") || "{}")); } catch (e) {}
     function sohranit() { try { localStorage.setItem("turboGarazh", JSON.stringify(sohr)); } catch (e) {} }
 
@@ -399,6 +404,14 @@
       return g;
     }
     const TIPY_SPISOK = ["sedan", "dzhip", "sport"];
+    const MODELI = [{ tip: "sport", nazv: "🏎️ Спорткар", cena: 0 }, { tip: "sedan", nazv: "🚗 Седан", cena: 100 }, { tip: "dzhip", nazv: "🚙 Джип", cena: 150 }];
+    // если игрок выбрал другую машину — меняем 3D-модель на новую (на том же месте)
+    function zamenitMashinu(sc, staraya) {
+      if (staraya.userData.tip === sohr.tip) { perekrasit(staraya, sohr.cvet); return staraya; }
+      const n = sozdatMashinu(sohr.cvet, sohr.tip);
+      n.position.copy(staraya.position); n.rotation.copy(staraya.rotation); n.visible = staraya.visible;
+      sc.remove(staraya); sc.add(n); return n;
+    }
     function perekrasit(mashina, cvet) { mashina.userData.okrashennye.forEach((m) => (m.material = kraska(cvet))); }
     // крутим колёса и руль; naklon — машина чуть наклоняется в повороте (как настоящая)
     function animirovatMashinu(mashina, skorost, rul, naklon = 0) {
@@ -451,13 +464,25 @@
       const pol = new THREE.Mesh(new THREE.CircleGeometry(4.4, 64).rotateX(-Math.PI / 2),
         new THREE.MeshStandardMaterial({ color: 0x1f2a33, metalness: 0.6, roughness: 0.25 }));
       pol.receiveShadow = true; sc.add(pol);
-      vitrina.mashina = sozdatMashinu(sohr.cvet); sc.add(vitrina.mashina);
+      vitrina.mashina = sozdatMashinu(sohr.cvet, sohr.tip); sc.add(vitrina.mashina);
       vitrina.kamera.position.set(5.6, 2.4, 6.2); vitrina.kamera.lookAt(0, 0.75, 0);
     }
 
     function risovatGarazh() {
       $("monety").textContent = sohr.monety;
-      perekrasit(vitrina.mashina, sohr.cvet);
+      vitrina.mashina = zamenitMashinu(vitrina.scena, vitrina.mashina);
+      // 🚘 выбор машины: спорткар есть сразу, седан и джип покупаются за монеты
+      $("vyborMashin").innerHTML = "";
+      MODELI.forEach(({ tip, nazv, cena: c }) => {
+        const b = document.createElement("button"), est = sohr.tipy.includes(tip);
+        b.innerHTML = nazv + "<br><small>" + (sohr.tip === tip ? "✅ выбрана" : est ? "выбрать" : c + " 🪙") + "</small>";
+        if (sohr.tip !== tip) b.className = "prozr";
+        b.onclick = () => {
+          if (!est) { if (sohr.monety < c) { soobsh("Не хватает монет 🪙 — пройди миссии!"); return; } sohr.monety -= c; sohr.tipy.push(tip); zvukMoneta(); }
+          sohr.tip = tip; sohranit(); risovatGarazh();
+        };
+        $("vyborMashin").appendChild(b);
+      });
       polosa("pol-skorost", sohr.skorost); polosa("pol-upr", sohr.upr);
       knopkaProkachki("kup-skorost", "skorost"); knopkaProkachki("kup-upr", "upr");
       $("cveta").innerHTML = "";
@@ -612,13 +637,13 @@
       const monetaMat = new THREE.MeshStandardMaterial({ color: 0xffc107, metalness: 1, roughness: 0.2, emissive: 0x6b4a00 });
       const monetyPul = [];
       for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(monetaGeo, monetaMat); m.visible = false; m.castShadow = true; sc.add(m); monetyPul.push(m); }
-      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      const igrokM = sozdatMashinu(sohr.cvet, sohr.tip); sc.add(igrokM);
       G3 = { sc, solnce, dorogaTex, dekor, pul, monetyPul, igrokM };
       return G3;
     }
     function novayaGonka() {
       const m = mirGonki();
-      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      scena = m.sc; m.igrokM = zamenitMashinu(m.sc, m.igrokM); igrok = m.igrokM;
       m.pul.forEach((p) => { p.visible = false; p.userData.vlad = null; });
       kamera.fov = 62; kamera.updateProjectionMatrix();
       return { x: 200, skor: 5 + sohr.skorost, put: 0, sdvig: 0, mashiny: [], monety: [], tik: 0 };
@@ -729,7 +754,7 @@
         d.position.set(Math.cos(ugol) * 30, 0, Math.sin(ugol) * 42); sc.add(d);
       }
       const uroven = new THREE.Group(); sc.add(uroven);
-      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      const igrokM = sozdatMashinu(sohr.cvet, sohr.tip); sc.add(igrokM);
       P3 = { sc, uroven, igrokM, mestoMat: null };
       return P3;
     }
@@ -739,7 +764,7 @@
     }, [2, 1]);
     function novayaParkovka() {
       const u = UROVNI[tekUroven - 1], m = mirParkovki();
-      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      scena = m.sc; m.igrokM = zamenitMashinu(m.sc, m.igrokM); igrok = m.igrokM;
       m.uroven.clear();
       u.prep.forEach((p) => {
         if (p.mashina) {
@@ -857,13 +882,13 @@
         const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dymTex, color: 0xcfd8dc, transparent: true, opacity: 0, depthWrite: false }));
         sp.userData.zhizn = 0; sc.add(sp); dym.push(sp);
       }
-      const igrokM = sozdatMashinu(sohr.cvet); sc.add(igrokM);
+      const igrokM = sozdatMashinu(sohr.cvet, sohr.tip); sc.add(igrokM);
       D3 = { sc, sledy, dym, igrokM, sledN: 0 };
       return D3;
     }
     function novyiDrift() {
       const m = mirDrifta();
-      scena = m.sc; igrok = m.igrokM; perekrasit(igrok, sohr.cvet);
+      scena = m.sc; m.igrokM = zamenitMashinu(m.sc, m.igrokM); igrok = m.igrokM;
       const nol = new THREE.Matrix4().makeScale(0, 0, 0);
       for (let i = 0; i < MAX_SLEDOV; i++) m.sledy.setMatrixAt(i, nol);
       m.sledy.instanceMatrix.needsUpdate = true; m.sledN = 0;
@@ -1092,7 +1117,7 @@
       // машины в городе: твоя + припаркованные. В любую можно сесть!
       const mashiny = [];
       const dobavit = (x, z, a, cvet, id, tip) => { const model = sozdatMashinu(cvet, tip); sc.add(model); const m = { x, z, a, vx: 0, vz: 0, cvet, model, id }; mashiny.push(m); return m; };
-      dobavit(-17, 60, 0, sohr.cvet, "moya");
+      dobavit(-17, 60, 0, sohr.cvet, "moya", sohr.tip);
       [[63, -30, 0, "#c62828", null, "sedan"], [-57, 30, Math.PI, "#212121", null, "dzhip"], [30, 63, Math.PI / 2, "#2e7d32", null, "sedan"],
        [-30, -57, -Math.PI / 2, "#ef6c00", null, "sport"], [97, 10, 0, "#1565c0", null, "dzhip"],
        [99, -80, 0, "#ffb300", "zoloto", "sport"]].forEach(([x, z, a, c, id, tip]) => dobavit(x, z, a, c, id, tip));
@@ -1170,7 +1195,7 @@
     function novyiGorod() {
       const c = mirGoroda();
       scena = c.sc;
-      c.mashiny.forEach((m) => { if (m.id === "moya") perekrasit(m.model, sohr.cvet); });
+      c.mashiny.forEach((m) => { if (m.id === "moya") m.model = zamenitMashinu(c.sc, m.model); });
       const moya = c.mashiny.find((m) => m.id === "moya");
       Object.assign(moya, { x: -17, z: 60, a: 0, vx: 0, vz: 0 });
       c.chelovek.visible = false; c.passazhir.visible = false; c.mayak.visible = false; c.strelka.visible = false;
