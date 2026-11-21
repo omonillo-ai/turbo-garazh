@@ -116,6 +116,12 @@
     </div>
 
     <div class="karta">
+      <h2>👕 Персонаж (гардероб)</h2>
+      <div id="garderob"></div>
+      <p class="malo">Персонаж стоит рядом с машиной. В Городе можно выйти и гулять в этой одежде 🚶</p>
+    </div>
+
+    <div class="karta">
       <h2>🔧 Тюнинг</h2>
       <div id="tyuning"></div>
     </div>
@@ -190,7 +196,7 @@
     import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
     // ================= 1) СОХРАНЕНИЕ (localStorage) =================
-    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], tip: "sport", tipy: ["sport"], tun: { disk: "serebro", spoiler: "standart", neon: "net", podveska: "obych", ton: "obych" }, tunKupleno: [], rekord: { gonka: 0, drift: 0 }, park: 1 };
+    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], tip: "sport", tipy: ["sport"], tun: { disk: "serebro", spoiler: "standart", neon: "net", podveska: "obych", ton: "obych" }, tunKupleno: [], odezhda: { futbolka: "#1e88e5", shtany: "#263238", obuv: "#fafafa", volosy: "#2b1b10", shapka: "net", shapkaCvet: "#d32f2f" }, rekord: { gonka: 0, drift: 0 }, park: 1 };
     try { Object.assign(sohr, JSON.parse(localStorage.getItem("turboGarazh") || "{}")); } catch (e) {}
     function sohranit() { try { localStorage.setItem("turboGarazh", JSON.stringify(sohr)); } catch (e) {} }
 
@@ -342,6 +348,16 @@
       dzhip: { r: 0.53, osX: 1.1, pered: 1.5, zad: -1.5, dno: 0.55, kapot: [[2.15, 1.02], [1.1, 1.14]], poyas: -2.05, poyasY: 1.2, zadY: 1.18,
                kabina: [[1.15, 1.14], [0.6, 1.62], [0.15, 1.95], [-1.0, 1.98], [-1.85, 1.96], [-2.15, 1.2]], farY: 0.95, stopY: 1.08, rejlingi: true, trub: 2 }
     };
+    Object.assign(TIPY, {
+      hetchbek: { r: 0.44, osX: 1.04, pered: 1.38, zad: -1.38, dno: 0.42, kapot: [[2.05, 0.84], [1.0, 0.98]], poyas: -2.05, poyasY: 1.02, zadY: 1.02,
+                  kabina: [[1.0, 0.98], [0.45, 1.42], [0.0, 1.62], [-1.3, 1.64], [-1.95, 1.55], [-2.15, 1.04]], farY: 0.74, stopY: 1.05, trub: 2 },
+      superkar: { r: 0.47, osX: 1.08, pered: 1.38, zad: -1.38, dno: 0.38, kapot: [[2.15, 0.66], [0.9, 0.82]], poyas: -1.6, poyasY: 0.9, zadY: 0.86,
+                  kabina: [[0.95, 0.8], [0.2, 1.2], [-0.4, 1.32], [-1.1, 1.28], [-1.75, 1.0], [-2.1, 0.88]], farY: 0.58, stopY: 0.78, spoiler: true, trub: 4 },
+      pikap:    { r: 0.52, osX: 1.1, pered: 1.33, zad: -1.33, dno: 0.55, kapot: [[2.15, 1.02], [1.1, 1.15]], poyas: -2.1, poyasY: 1.22, zadY: 1.22,
+                  kabina: [[1.15, 1.15], [0.6, 1.62], [0.25, 1.92], [-0.55, 1.95], [-0.8, 1.9], [-0.85, 1.22]], farY: 0.95, stopY: 1.05, bort: true, trub: 2 },
+      miniven:  { r: 0.46, osX: 1.08, pered: 1.4, zad: -1.4, dno: 0.48, kapot: [[2.15, 0.95], [1.35, 1.12]], poyas: -2.15, poyasY: 1.2, zadY: 1.2,
+                  kabina: [[1.35, 1.12], [0.75, 1.7], [0.2, 2.02], [-1.2, 2.06], [-2.0, 2.0], [-2.2, 1.22]], farY: 0.88, stopY: 1.25, trub: 2 }
+    });
     const GEO_TIP = {};
     function geoTipa(tip) {
       if (GEO_TIP[tip]) return GEO_TIP[tip];
@@ -395,11 +411,13 @@
 
     // Машина из деталей (без чужих логотипов). Нос смотрит в −Z. tip: "sport" | "sedan" | "dzhip"
     // tun — тюнинг (только у машины игрока): диски, спойлер, неон, занижение, тонировка
-    function sozdatMashinu(cvet, tip = "sport", tun = null) {
+    // prostaya = true — «лёгкая» машина без мелких деталей (для толпы машин, чтобы игра не тормозила)
+    function sozdatMashinu(cvet, tip = "sport", tun = null, prostaya = false) {
       const spoilerTip = tun && tun.spoiler === "bolshoi" ? "big" : tun && tun.spoiler === "net" ? null : TIPY[tip].spoiler ? "mal" : null;
       const t = TIPY[tip], G = geoTipa(tip), g = new THREE.Group(), kr = kraska(cvet), okrashennye = [];
       const kras = (geo) => { const m = new THREE.Mesh(geo, kr); okrashennye.push(m); return m; };
-      const add = (m, x, y, z, ten = false) => { set(m, x, y, z); if (ten) m.castShadow = true; g.add(m); return m; };
+      const add = (m, x, y, z, ten = false) => { set(m, x, y, z); if (ten && !prostaya) m.castShadow = true; g.add(m); return m; };
+      const melk = (m, x, y, z) => (prostaya ? m : add(m, x, y, z));   // мелкая деталь — только у «полной» машины
       add(kras(G.niz), 0, 0, 0, true);
       add(new THREE.Mesh(G.kabina, tun && tun.ton === "chern" ? MAT.stekloTemn : MAT.steklo), 0, 0, 0, true);
       add(kras(G.krysha), 0, 0, 0, true);
@@ -407,28 +425,29 @@
       const perY = t.farY, zadZ = 2.4, perZ = -2.42;
       [-1, 1].forEach((s) => {
         // фары: линза + яркая полоска дневного света (LED)
-        add(new THREE.Mesh(GEO.linza, MAT.linza), s * 0.72, perY, perZ + 0.02);
+        melk(new THREE.Mesh(GEO.linza, MAT.linza), s * 0.72, perY, perZ + 0.02);
         add(new THREE.Mesh(GEO.fara, MAT.fara), s * 0.72, perY + 0.02, perZ - 0.01);
-        const drl = add(new THREE.Mesh(GEO.drl, MAT.fara), s * 0.7, perY - 0.1, perZ - 0.01); drl.rotation.z = s * 0.12;
+        if (!prostaya) { const drl = add(new THREE.Mesh(GEO.drl, MAT.fara), s * 0.7, perY - 0.1, perZ - 0.01); drl.rotation.z = s * 0.12; }
         // задние фонари
         add(new THREE.Mesh(GEO.stop, MAT.stop), s * 0.74, t.stopY, zadZ);
         // зеркала на ножках, ручки дверей, пороги
         const z = add(kras(GEO.zerkalo), s * (tip === "dzhip" ? 1.18 : 1.1), t.kabina[0][1] + 0.12, -0.55 + (tip === "dzhip" ? -0.1 : 0)); z.castShadow = true;
-        add(new THREE.Mesh(GEO.nozhka, MAT.chernyi), s * 0.98, t.kabina[0][1] + 0.08, -0.55);
-        add(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, -0.1);
-        add(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, 0.95);
-        add(new THREE.Mesh(GEO.porog, MAT.plastik), s * 1.2, t.dno + 0.02, 0.02);
+        melk(new THREE.Mesh(GEO.nozhka, MAT.chernyi), s * 0.98, t.kabina[0][1] + 0.08, -0.55);
+        melk(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, -0.1);
+        melk(new THREE.Mesh(GEO.ruchka, MAT.hrom), s * 1.235, t.poyasY - 0.1, 0.95);
+        melk(new THREE.Mesh(GEO.porog, MAT.plastik), s * 1.2, t.dno + 0.02, 0.02);
         if (spoilerTip) { const st = add(new THREE.Mesh(GEO.stoika, MAT.chernyi), s * 0.7, t.zadY + (spoilerTip === "big" ? 0.25 : 0.1), 1.95);
           if (spoilerTip === "big") st.scale.y = 2.6; }
         if (t.rejlingi) add(new THREE.Mesh(GEO.rejling, MAT.plastik), s * 0.75, t.kabina[3][1] + 0.08, 0.45);
       });
       add(new THREE.Mesh(GEO.stopPolosa, MAT.stop), 0, t.stopY + 0.02, zadZ + 0.01);              // световая полоса через весь зад
       add(new THREE.Mesh(GEO.vozduh, MAT.plastik), 0, t.dno + 0.13, perZ + 0.05);                 // воздухозаборник
-      add(new THREE.Mesh(GEO.diffuzor, MAT.plastik), 0, t.dno + 0.08, zadZ - 0.03);
+      melk(new THREE.Mesh(GEO.diffuzor, MAT.plastik), 0, t.dno + 0.08, zadZ - 0.03);
       const np = add(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, perZ - 0.02); np.rotation.y = Math.PI;
-      add(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, zadZ + 0.06);
+      melk(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, zadZ + 0.06);
       const trub = t.trub === 4 ? [-0.62, -0.45, 0.45, 0.62] : [-0.55, 0.55];
-      trub.forEach((x) => add(new THREE.Mesh(GEO.truba, MAT.hrom), x, t.dno + 0.08, zadZ + 0.04));
+      trub.forEach((x) => melk(new THREE.Mesh(GEO.truba, MAT.hrom), x, t.dno + 0.08, zadZ + 0.04));
+      if (t.bort) add(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 1.3), MAT.chernyi), 0, t.poyasY + 0.13, 1.6);   // кузов пикапа
       if (spoilerTip) { const sp = add(new THREE.Mesh(GEO.spoiler, MAT.chernyi), 0, t.zadY + (spoilerTip === "big" ? 0.55 : 0.22), 1.95, true);
         if (spoilerTip === "big") sp.scale.set(1.08, 1.2, 1.25); }
       // колёса: шина + боковина + диск со спицами + красный суппорт. povorot — руль, kruchenie — вращение
@@ -437,7 +456,9 @@
         const povorot = set(new THREE.Group(), s * t.osX, t.r, -xProf), kruchenie = new THREE.Group();
         const shina = new THREE.Mesh(G.shina, MAT.shina); shina.castShadow = true;
         const diskMat = tun && tun.disk !== "serebro" ? { chern: MAT.diskChern, zoloto: MAT.diskZoloto, krasn: MAT.diskKrasn }[tun.disk] : tip === "dzhip" ? MAT.diskTemn : MAT.disk;
-        kruchenie.add(shina, new THREE.Mesh(G.disk, MAT.vnutri), new THREE.Mesh(G.tormDisk, MAT.diskTemn));
+        kruchenie.add(shina, new THREE.Mesh(G.disk, prostaya ? diskMat : MAT.vnutri));
+        if (prostaya) { povorot.add(kruchenie); g.add(povorot); kolesa.push(kruchenie); if (i < 2) perednie.push(povorot); return; }
+        kruchenie.add(new THREE.Mesh(G.tormDisk, MAT.diskTemn));
         const obod = new THREE.Mesh(G.obod, diskMat); obod.position.x = s * 0.13; kruchenie.add(obod);
         const kp = new THREE.Mesh(G.kolpak, MAT.hrom); kp.position.x = s * 0.15; kruchenie.add(kp);
         for (let k = 0; k < 5; k++) {                         // 10 спиц (5 палочек через центр)
@@ -460,13 +481,15 @@
         }
         // фары светят вперёд по-настоящему
         const fary = new THREE.SpotLight(0xfff1d6, 160, 45, 0.42, 0.5, 1.6);
-        fary.position.set(0, t.farY, -2.3); fary.target.position.set(0, 0, -16); g.add(fary, fary.target);
+        fary.position.set(0, t.farY, -2.3); fary.target.position.set(0, 0, -16); g.add(fary, fary.target); g.userData.faryLuch = fary;
       }
-      g.userData = { kolesa, perednie, okrashennye, tip, klyuch: tip + JSON.stringify(tun) };
+      Object.assign(g.userData, { kolesa, perednie, okrashennye, tip, klyuch: tip + JSON.stringify(tun) });
       return g;
     }
-    const TIPY_SPISOK = ["sedan", "dzhip", "sport"];
-    const MODELI = [{ tip: "sport", nazv: "🏎️ Спорткар", cena: 0 }, { tip: "sedan", nazv: "🚗 Седан", cena: 100 }, { tip: "dzhip", nazv: "🚙 Джип", cena: 150 }];
+    const TIPY_SPISOK = ["sedan", "dzhip", "sport", "hetchbek", "pikap", "miniven", "superkar"];
+    const MODELI = [{ tip: "sport", nazv: "🏎️ Спорткар", cena: 0 }, { tip: "hetchbek", nazv: "🚘 Хэтчбек", cena: 80 }, { tip: "sedan", nazv: "🚗 Седан", cena: 100 },
+      { tip: "miniven", nazv: "🚐 Минивэн", cena: 120 }, { tip: "dzhip", nazv: "🚙 Джип", cena: 150 }, { tip: "pikap", nazv: "🛻 Пикап", cena: 150 },
+      { tip: "superkar", nazv: "🏁 Суперкар", cena: 300 }];
     // если игрок выбрал другую машину — меняем 3D-модель на новую (на том же месте)
     function zamenitMashinu(sc, staraya) {
       if (staraya.userData.klyuch === sohr.tip + JSON.stringify(sohr.tun)) { perekrasit(staraya, sohr.cvet); return staraya; }
@@ -518,7 +541,7 @@
       const sc = vitrina.scena;
       sc.background = new THREE.Color(0x151c24); sc.environment = renderVitrina.env;
       sc.add(new THREE.HemisphereLight(0xbfdcff, 0x202020, 0.5));
-      const prozhektor = new THREE.SpotLight(0xffffff, 300, 30, 0.6, 0.6);
+      const prozhektor = new THREE.SpotLight(0xffffff, 110, 30, 0.6, 0.6);
       prozhektor.position.set(0, 9, 2); prozhektor.castShadow = true; sc.add(prozhektor);
       const neon = new THREE.Mesh(new THREE.TorusGeometry(4.4, 0.05, 8, 80).rotateX(Math.PI / 2),
         new THREE.MeshStandardMaterial({ color: 0x4fc3f7, emissive: 0x4fc3f7, emissiveIntensity: 3 }));
@@ -527,12 +550,14 @@
         new THREE.MeshStandardMaterial({ color: 0x1f2a33, metalness: 0.6, roughness: 0.25 }));
       pol.receiveShadow = true; sc.add(pol);
       vitrina.mashina = sozdatMashinu(sohr.cvet, sohr.tip, sohr.tun); sc.add(vitrina.mashina);
-      vitrina.kamera.position.set(5.6, 2.4, 6.2); vitrina.kamera.lookAt(0, 0.75, 0);
+      vitrina.chel = null;                                     // человечек появится после загрузки одежды (ниже)
+      vitrina.kamera.position.set(6.4, 2.8, 7.6); vitrina.kamera.lookAt(0.6, 0.9, 0.4);
     }
 
     function risovatGarazh() {
       $("monety").textContent = sohr.monety;
       vitrina.mashina = zamenitMashinu(vitrina.scena, vitrina.mashina);
+      if (vitrina.mashina.userData.faryLuch) vitrina.mashina.userData.faryLuch.visible = false;   // в гараже фары не слепят
       // 🚘 выбор машины: спорткар есть сразу, седан и джип покупаются за монеты
       $("vyborMashin").innerHTML = "";
       MODELI.forEach(({ tip, nazv, cena: c }) => {
@@ -545,7 +570,7 @@
         };
         $("vyborMashin").appendChild(b);
       });
-      tyuningChiz();
+      tyuningChiz(); garderobChiz();
       polosa("pol-skorost", sohr.skorost); polosa("pol-upr", sohr.upr);
       knopkaProkachki("kup-skorost", "skorost"); knopkaProkachki("kup-upr", "upr");
       $("cveta").innerHTML = "";
@@ -574,6 +599,41 @@
       { k: "podveska", nazv: "⬇️ Подвеска", v: [["obych", "Обычная", 0], ["nizko", "Заниженная", 60]] },
       { k: "ton", nazv: "🕶️ Тонировка", v: [["obych", "Обычная", 0], ["chern", "Чёрная", 30]] }
     ];
+    const GARDEROB = [
+      { k: "futbolka", nazv: "👕 Футболка", cveta: ["#1e88e5", "#e53935", "#43a047", "#fdd835", "#212121", "#ffffff", "#8e24aa", "#fb8c00"] },
+      { k: "shtany", nazv: "👖 Штаны", cveta: ["#263238", "#1565c0", "#5d4037", "#9e9e9e", "#212121", "#2e7d32"] },
+      { k: "obuv", nazv: "👟 Кроссовки", cveta: ["#fafafa", "#212121", "#e53935", "#1e88e5", "#fdd835"] },
+      { k: "volosy", nazv: "💇 Волосы", cveta: ["#2b1b10", "#111111", "#6d4c41", "#c69c6d"] },
+      { k: "shapkaCvet", nazv: "🎨 Цвет головного убора", cveta: ["#d32f2f", "#1e88e5", "#212121", "#fdd835", "#ffffff", "#43a047"] }
+    ];
+    function garderobChiz() {
+      const box = $("garderob"), od = sohr.odezhda; box.innerHTML = "";
+      const shapki = document.createElement("div"); shapki.className = "tyun";
+      [["net", "Без шапки"], ["kepka", "🧢 Кепка"], ["shapka", "🧶 Шапка"], ["shlem", "⛑️ Шлем"]].forEach(([id, imya]) => {
+        const b = document.createElement("button"); b.textContent = imya + (od.shapka === id ? " ✅" : "");
+        if (od.shapka !== id) b.className = "prozr";
+        b.onclick = () => { od.shapka = id; sohranit(); risovatGarazh(); };
+        shapki.appendChild(b);
+      });
+      box.append("🎩 Головной убор", shapki);
+      GARDEROB.forEach(({ k, nazv, cveta }) => {
+        const ryad = document.createElement("div"); ryad.className = "cveta"; ryad.style.margin = "4px 0 10px";
+        cveta.forEach((c) => {
+          const d = document.createElement("div"); d.className = "cvet" + (od[k] === c ? " vybran" : ""); d.style.cssText = "width:34px;height:34px;background:" + c;
+          d.onclick = () => { od[k] = c; sohranit(); risovatGarazh(); };
+          ryad.appendChild(d);
+        });
+        box.append(nazv, ryad);
+      });
+      // человечек на подиуме рядом с машиной
+      const kl = JSON.stringify(od);
+      if (!vitrina.chel || vitrina.chel.userData.klyuch !== kl) {
+        if (vitrina.chel) vitrina.scena.remove(vitrina.chel);
+        vitrina.chel = sozdatCheloveka(od); vitrina.chel.userData.klyuch = kl;
+        vitrina.chel.position.set(-2.4, 0, 2.9); vitrina.chel.rotation.y = -2.06;
+        vitrina.scena.add(vitrina.chel);
+      }
+    }
     function tyuningChiz() {
       const box = $("tyuning"); box.innerHTML = "";
       TYUNING.forEach(({ k, nazv, v }) => {
@@ -659,7 +719,7 @@
     // ================= 6) ОБЩЕЕ ДЛЯ ИГРЫ =================
     let rezhim = null, igraIdet = false, s = null, zarabotano = 0;
     let scena = null, kamera = new THREE.PerspectiveCamera(60, W / VYS, 0.1, 1200), igrok = null;
-    window.KOMP = { igra: sozdatKompozer(render, kamera, W, VYS, 0.4), vitr: sozdatKompozer(renderVitrina, vitrina.kamera, 400, 200, 0.45) };
+    window.KOMP = { igra: sozdatKompozer(render, kamera, W, VYS, 0.4), vitr: sozdatKompozer(renderVitrina, vitrina.kamera, 400, 200, 0.3) };
     primenitGrafiku();
     function narisovat(r, komp, sc, kam) {
       if (vysokaya) { komp.rp.scene = sc; komp.rp.camera = kam; komp.k.render(); } else r.render(sc, kam);
@@ -671,7 +731,7 @@
       $("nazvRezhima").textContent = { gonka: "🏁 Гонка", parkovka: "🅿️ Парковка · ур. " + tekUroven, drift: "🌀 Дрифт", gorod: "🏙️ Город" }[r];
       $("knRuchnik").style.visibility = r === "drift" || r === "gorod" ? "visible" : "hidden";
       $("knRuchnik").innerHTML = "✋<br>ручник";
-      $("pult2").style.display = "none"; $("minikarta").style.display = r === "gorod" ? "block" : "none";
+      $("pult2").style.display = "none"; $("minikarta").style.display = r === "gorod" || r === "drift" ? "block" : "none";
       $("banner").style.opacity = 0;
       s = r === "gonka" ? novayaGonka() : r === "parkovka" ? novayaParkovka() : r === "drift" ? novyiDrift() : novyiGorod();
       igraIdet = true;
@@ -715,9 +775,9 @@
       const fx = Math.sin(m.a), fy = -Math.cos(m.a);
       return [-14, 0, 14].map((d) => [m.x + fx * d, m.y + fy * d]);
     }
-    function udarilas(m, prepyatstviya) {
+    function udarilas(m, prepyatstviya, bw = W, bh = VYS) {
       return krugiMashiny(m).some(([x, y]) =>
-        x < 11 || x > W - 11 || y < 11 || y > VYS - 11 || prepyatstviya.some((p) => krugPryam(x, y, 11, p)));
+        x < 11 || x > bw - 11 || y < 11 || y > bh - 11 || prepyatstviya.some((p) => krugPryam(x, y, 11, p)));
     }
     let hudBylo = "";
     function hud(stroki) {
@@ -734,10 +794,9 @@
       const sc = new THREE.Scene();
       sc.fog = new THREE.Fog(0xc4dff2, 60, 180);
       sc.environment = render.env;
-      const nebo = new Sky(); nebo.scale.setScalar(900);                       // настоящее небо с солнцем
-      nebo.material.uniforms.sunPosition.value.setFromSphericalCoords(1, THREE.MathUtils.degToRad(62), THREE.MathUtils.degToRad(160));
-      nebo.material.uniforms.turbidity.value = 3; nebo.material.uniforms.rayleigh.value = 1.2;
-      sc.add(nebo);
+      // небо: плавный переход от синего вверху к светлому у горизонта
+      sc.background = tekstura(4, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, "#1f6fd1"); g.addColorStop(0.55, "#7fb8ec"); g.addColorStop(1, "#d6ebfa"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
       const solnce = svet(sc, { razmer: 30 });
       // дорога: разметка нарисована на текстуре, текстура «бежит» — кажется, что едем
       const dorogaTex = tekstura(280, 80, (c, w, h) => {
@@ -767,7 +826,7 @@
         sc.add(o); dekor.push(o);
       }
       const pul = [];                                          // «бассейн» машин-соперников
-      for (let i = 0; i < 14; i++) { const m = sozdatMashinu("#fff", TIPY_SPISOK[i % 3]); m.visible = false; sc.add(m); pul.push(m); }
+      for (let i = 0; i < 14; i++) { const m = sozdatMashinu("#fff", TIPY_SPISOK[i % TIPY_SPISOK.length], null, true); m.visible = false; sc.add(m); pul.push(m); }
       const monetaGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.14, 28).rotateX(Math.PI / 2);
       const monetaMat = new THREE.MeshStandardMaterial({ color: 0xffc107, metalness: 1, roughness: 0.2, emissive: 0x6b4a00 });
       const monetyPul = [];
@@ -863,6 +922,51 @@
         prep: [avto(338, 8, true, "#6a1b9a"), avto(338, 114, true), { x: 90, y: 160, w: 310, h: 26 }, { x: 0, y: 330, w: 300, h: 26 },
                { x: 120, y: 470, w: 280, h: 26 }] }
     ];
+    // ---- уровни 6–25 создаются «по рецепту»: чем дальше, тем уже место и больше машин ----
+    function sdelatUroven(n) {
+      let zz = n * 7919 + 13; const r = () => ((zz = (zz * 16807) % 2147483647) / 2147483647);
+      const sl = (n - 6) / 19;                                          // сложность 0 … 1
+      const cvet = () => CVETA[Math.floor(r() * 6)].c;
+      const prep = [];
+      // ряд машин «боком» с проходом (gap — где проход, sh — ширина прохода)
+      const ryad = (y, gap, sh) => {
+        [[0, gap - sh / 2], [gap + sh / 2, 400]].forEach(([x0, x1]) => {
+          let x = x0 + 2;
+          for (; x + 50 <= x1 - 2; x += 54) prep.push(avto(x, y, true, cvet()));
+          if (x1 - x > 2) prep.push({ x, y: y + 4, w: x1 - x, h: 22 });           // кусочек бетона, чтобы не было щели
+        });
+      };
+      let mesto, start = [200, 590, 0];
+      if (n % 4 === 0) {
+        // место у боковой стены: нужно повернуть на 90°
+        const sprava = r() < 0.5, w = 80 - sl * 8, h = 50 - sl * 4, py = 130 + r() * 170;
+        const mx = sprava ? 400 - 6 - w : 6;
+        mesto = { x: mx, y: py, w, h };
+        for (let y = py - 34; y > 8; y -= 36) prep.push(avto(sprava ? 400 - 56 : 6, y, true, cvet()));
+        for (let y = py + h + 4; y < 420; y += 36) prep.push(avto(sprava ? 400 - 56 : 6, y, true, cvet()));
+        for (let y = 20; y < 420; y += 56) prep.push(avto(sprava ? 8 : 362, y, false, cvet()));   // машины у другой стены
+        if (n >= 12) ryad(470, sprava ? 120 + r() * 60 : 220 + r() * 60, 110 - sl * 25);
+      } else {
+        // место в ряду машин наверху
+        const w = 60 - sl * 14, h = 72 - sl * 8, cx = [80, 140, 200, 260, 320][Math.floor(r() * 5)];
+        mesto = { x: cx - w / 2, y: 30, w, h };
+        const yy = 30 + (h - 50) / 2;
+        for (let x = cx - w / 2 - 34; x > 8; x -= 40) prep.push(avto(x, yy, false, cvet()));
+        for (let x = cx + w / 2 + 4; x + 30 < 392; x += 40) prep.push(avto(x, yy, false, cvet()));
+        let g2 = cx;
+        if (n >= 12) { g2 = Math.max(80, Math.min(320, cx + (r() - 0.5) * 80)); ryad(215, g2, 110 - sl * 30); }
+        const g1 = Math.max(80, Math.min(320, g2 + (r() - 0.5) * 180));
+        ryad(360, g1, 120 - sl * 35);
+        if (n >= 8) [430, 490].forEach((y) => { prep.push(avto(6, y, false, cvet())); prep.push(avto(364, y, false, cvet())); });
+        if (n >= 18) {                                                   // бетонные столбы
+          [[60, 450], [340, 450], [110, 520], [290, 520]].forEach(([x, y]) => {
+            if (Math.abs(x - g1) > 70 && Math.abs(x - 200) > 60) prep.push({ x: x - 14, y, w: 28, h: 28 });
+          });
+        }
+      }
+      return { start, mesto, prep };
+    }
+    for (let n = 6; n <= 25; n++) UROVNI.push(sdelatUroven(n));
     let tekUroven = 1, P3 = null;
     function mirParkovki() {
       if (P3) return P3;
@@ -903,7 +1007,7 @@
       m.uroven.clear();
       u.prep.forEach((p) => {
         if (p.mashina) {
-          const mm = sozdatMashinu(p.mashina, TIPY_SPISOK[(p.x + p.y) % 2]);
+          const mm = sozdatMashinu(p.mashina, TIPY_SPISOK[Math.abs(Math.round(p.x * 7 + p.y * 3)) % TIPY_SPISOK.length], null, true);
           postavit(mm, p.x + p.w / 2, p.y + p.h / 2, p.w > p.h ? Math.PI / 2 : 0); m.uroven.add(mm);
         } else {
           const b = new THREE.Mesh(new THREE.BoxGeometry(p.w / 10, 1.3, p.h / 10), new THREE.MeshStandardMaterial({ map: polosatyiTex(), roughness: 0.7 }));
@@ -966,46 +1070,67 @@
       hud(["🅿️ Уровень " + tekUroven + "/" + UROVNI.length, gotov > 0 ? "⏳ " + Math.round(gotov * 100) + "%" : "Встань на P и остановись"]);
     }
 
-    // ================= 9) РЕЖИМ «ДРИФТ» (ночь, фонари) =================
-    const OSTROV = [{ x: 140, y: 230, w: 120, h: 180 }];
+    // ================= 9) РЕЖИМ «ДРИФТ» (ночь, фонари) — БОЛЬШАЯ площадка =================
+    // Поле дрифта 1300×2000 «пикселей» = 130×200 метров (в 10 раз больше старого).
+    const DW = 1300, DH = 2000;
+    const dX = (x) => (x - DW / 2) / 10, dZ = (y) => (y - DH / 2) / 10;
+    const OSTROV = [
+      { x: 500, y: 750, w: 300, h: 500, cvet: 0xff2bd6, nadpis: true },        // большой остров в центре
+      { x: 180, y: 250, w: 180, h: 180, cvet: 0x00e5ff }, { x: 940, y: 250, w: 180, h: 180, cvet: 0x00e676 },
+      { x: 180, y: 1570, w: 180, h: 180, cvet: 0xffd600 }, { x: 940, y: 1570, w: 180, h: 180, cvet: 0xff6d00 },
+      ...[0, 1, 2, 3].map((i) => ({ x: 640, y: 300 + i * 100, w: 20, h: 20, konus: true })),          // слалом из конусов
+      ...[0, 1, 2, 3].map((i) => ({ x: 640, y: 1360 + i * 100, w: 20, h: 20, konus: true }))
+    ];
     let D3 = null;
-    const MAX_SLEDOV = 1600;
+    const MAX_SLEDOV = 3000;
     function mirDrifta() {
       if (D3) return D3;
       const sc = new THREE.Scene();
-      sc.background = new THREE.Color(0x0a0f1e); sc.fog = new THREE.Fog(0x0a0f1e, 45, 110);
+      sc.background = new THREE.Color(0x0a0f1e); sc.fog = new THREE.Fog(0x0a0f1e, 60, 170);
       sc.environment = render.env;
-      svet(sc, { yarkost: 0.9, nebo: 0.35, cvetNeba: 0x6f7dff, razmer: 40 });
-      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = "#26292f"; c.fillRect(0, 0, w, h); shum(c, w, h, 3000, ["#30343b", "#1e2025", "#383c43"]); }, [6, 10]);
-      const pol = new THREE.Mesh(new THREE.PlaneGeometry(40, 64).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: asfaltTex, roughness: 0.75, metalness: 0.1 }));
+      const luna = svet(sc, { yarkost: 0.9, nebo: 0.35, cvetNeba: 0x6f7dff, razmer: 45 });
+      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = "#26292f"; c.fillRect(0, 0, w, h); shum(c, w, h, 3000, ["#30343b", "#1e2025", "#383c43"]); }, [20, 30]);
+      const pol = new THREE.Mesh(new THREE.PlaneGeometry(DW / 10, DH / 10).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: asfaltTex, roughness: 0.75, metalness: 0.1 }));
       pol.receiveShadow = true; sc.add(pol);
-      const vokrug = new THREE.Mesh(new THREE.PlaneGeometry(300, 300).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x111418 }));
+      const vokrug = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x111418 }));
       vokrug.position.y = -0.05; sc.add(vokrug);
-      // красно-белые отбойники по краю
-      const bel = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }), kras = new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.5 });
-      const blok = new THREE.BoxGeometry(2, 0.9, 0.6), blokB = new THREE.BoxGeometry(0.6, 0.9, 2);
-      for (let i = 0; i < 20; i++) [-32.3, 32.3].forEach((z) => { const b = new THREE.Mesh(blok, i % 2 ? bel : kras); b.position.set(-19 + i * 2, 0.45, z); b.castShadow = true; sc.add(b); });
-      for (let i = 0; i < 32; i++) [-20.3, 20.3].forEach((x) => { const b = new THREE.Mesh(blokB, i % 2 ? bel : kras); b.position.set(x, 0.45, -31 + i * 2); b.castShadow = true; sc.add(b); });
-      // остров-клумба с неоновой надписью
-      const o = OSTROV[0];
-      const ostrov = new THREE.Mesh(new RoundedBoxGeometry(o.w / 10, 0.5, o.h / 10, 3, 0.4), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 1 }));
-      ostrov.position.set(v3x(o.x + o.w / 2), 0.25, v3z(o.y + o.h / 2)); ostrov.receiveShadow = true; sc.add(ostrov);
+      // красно-белые отбойники по краю (сотни блоков = две «пачки» InstancedMesh)
+      const blok = new THREE.BoxGeometry(2, 0.9, 0.6);
+      const mesta = [];
+      for (let x = -DW / 20 + 1; x < DW / 20; x += 2) mesta.push([x, -DH / 20 - 0.3, 0], [x, DH / 20 + 0.3, 0]);
+      for (let z = -DH / 20 + 1; z < DH / 20; z += 2) mesta.push([-DW / 20 - 0.3, z, Math.PI / 2], [DW / 20 + 0.3, z, Math.PI / 2]);
+      [0xe53935, 0xffffff].forEach((cv, chet) => {
+        const nab = mesta.filter((_, i) => Math.floor(i / 2) % 2 === chet);
+        const im = new THREE.InstancedMesh(blok, new THREE.MeshStandardMaterial({ color: cv, roughness: 0.5 }), nab.length);
+        nab.forEach(([x, z, a], i) => im.setMatrixAt(i, new THREE.Matrix4().makeRotationY(a).setPosition(x, 0.45, z)));
+        im.castShadow = true; sc.add(im);
+      });
+      // острова-клумбы с неоновой рамкой и конусы
+      const konusGeo = new THREE.ConeGeometry(0.9, 1.6, 16), konusMat = new THREE.MeshStandardMaterial({ color: 0xff6d00, emissive: 0x401800, roughness: 0.6 });
+      OSTROV.forEach((o) => {
+        const cx = dX(o.x + o.w / 2), cz = dZ(o.y + o.h / 2);
+        if (o.konus) { const k = new THREE.Mesh(konusGeo, konusMat); k.position.set(cx, 0.8, cz); k.castShadow = true; sc.add(k); return; }
+        const ost = new THREE.Mesh(new RoundedBoxGeometry(o.w / 10, 0.5, o.h / 10, 3, 0.4), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 1 }));
+        ost.position.set(cx, 0.25, cz); ost.receiveShadow = true; sc.add(ost);
+        const ramka = new THREE.Mesh(new THREE.BoxGeometry(o.w / 10 + 0.3, 0.12, o.h / 10 + 0.3),
+          new THREE.MeshStandardMaterial({ color: o.cvet, emissive: o.cvet, emissiveIntensity: 2 }));
+        ramka.position.set(cx, 0.06, cz); sc.add(ramka);
+        if (!o.nadpis) { const d = derevo(); d.position.set(cx, 0.5, cz); sc.add(d); }
+      });
+      const c0 = OSTROV[0];
       const neonTex = tekstura(512, 256, (c, w, h) => {
         c.font = "bold 150px Arial"; c.textAlign = "center"; c.textBaseline = "middle";
         c.shadowColor = "#ff2bd6"; c.shadowBlur = 30; c.fillStyle = "#ff7be8"; c.fillText("DRIFT", w / 2, h / 2);
       });
-      const nadpis = new THREE.Mesh(new THREE.PlaneGeometry(11, 5.5).rotateX(-Math.PI / 2).rotateY(Math.PI / 2),
+      const nadpis = new THREE.Mesh(new THREE.PlaneGeometry(26, 13).rotateX(-Math.PI / 2).rotateY(Math.PI / 2),
         new THREE.MeshBasicMaterial({ map: neonTex, transparent: true }));
-      nadpis.position.set(ostrov.position.x, 0.52, ostrov.position.z); sc.add(nadpis);
-      const neonRamka = new THREE.Mesh(new THREE.BoxGeometry(o.w / 10 + 0.3, 0.12, o.h / 10 + 0.3),
-        new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 2 }));
-      neonRamka.position.set(ostrov.position.x, 0.06, ostrov.position.z); sc.add(neonRamka);
-      // фонари по углам — настоящие источники света
-      [[-18, -30], [18, -30], [-18, 30], [18, 30], [-18, 0], [18, 0]].forEach(([x, z]) => {
+      nadpis.position.set(dX(c0.x + c0.w / 2), 0.52, dZ(c0.y + c0.h / 2)); sc.add(nadpis);
+      // фонари вдоль краёв — настоящие источники света
+      [[-62, -90], [62, -90], [-62, -30], [62, -30], [-62, 30], [62, 30], [-62, 90], [62, 90]].forEach(([x, z]) => {
         const f = fonar(0xffd59a); f.position.set(x + (x < 0 ? -2.5 : 2.5), 0, z); if (x > 0) f.rotation.y = Math.PI; sc.add(f);
-        const l = new THREE.PointLight(0xffc77a, 140, 26, 2); l.position.set(x + (x < 0 ? -1.3 : 1.3), 5.6, z); sc.add(l);
+        const l = new THREE.PointLight(0xffc77a, 260, 40, 2); l.position.set(x + (x < 0 ? -1.3 : 1.3), 5.6, z); sc.add(l);
       });
-      // следы шин: одна «пачка» из 1600 тёмных полосок (InstancedMesh — рисуется очень быстро)
+      // следы шин: одна «пачка» тёмных полосок (InstancedMesh — рисуется очень быстро)
       const sledy = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.32, 0.7).rotateX(-Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false }), MAX_SLEDOV);
       const nol = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -1020,7 +1145,7 @@
         sp.userData.zhizn = 0; sc.add(sp); dym.push(sp);
       }
       const igrokM = sozdatMashinu(sohr.cvet, sohr.tip, sohr.tun); sc.add(igrokM);
-      D3 = { sc, sledy, dym, igrokM, sledN: 0 };
+      D3 = { sc, sledy, dym, igrokM, sledN: 0, luna };
       return D3;
     }
     function novyiDrift() {
@@ -1031,8 +1156,8 @@
       m.sledy.instanceMatrix.needsUpdate = true; m.sledN = 0;
       m.dym.forEach((d) => { d.userData.zhizn = 0; d.material.opacity = 0; });
       kamera.fov = 60; kamera.updateProjectionMatrix();
-      kamera.position.set(v3x(260), 7, v3z(540));
-      return { m: { x: 200, y: 540, a: -Math.PI / 2, vx: 0, vy: 0 }, ochki: 0, kombo: 0, vremya: 60 * 60, novyeSledy: [], zanos: 0 };
+      kamera.position.set(dX(650), 7, dZ(1950));
+      return { m: { x: 650, y: 1880, a: 0, vx: 0, vy: 0 }, ochki: 0, kombo: 0, vremya: 90 * 60, novyeSledy: [], zanos: 0 };
     }
     function obnovitDrift(k) {
       const d = s, m = d.m;
@@ -1049,7 +1174,7 @@
       m.vx = fx * vperyod + rx * vbok; m.vy = fy * vperyod + ry * vbok;
       const px = m.x, py = m.y;
       m.x += m.vx * k; m.y += m.vy * k;
-      if (udarilas(m, OSTROV)) {
+      if (udarilas(m, OSTROV, DW, DH)) {
         m.x = px; m.y = py; m.vx *= -0.3; m.vy *= -0.3;
         if (d.kombo > 0) zvukUdar();
         d.kombo = 0;
@@ -1069,17 +1194,17 @@
         konec("⏱️ ВРЕМЯ!", "🌀 Очки дрифта: <b>" + d.ochki + "</b>" + (novyi ? "<br>🏆 НОВЫЙ РЕКОРД!" : "<br>Рекорд: " + sohr.rekord.drift), true);
       }
     }
-    const vrem = new THREE.Matrix4(), vremQ = new THREE.Quaternion(), vremV = new THREE.Vector3(), ed = new THREE.Vector3(1, 1, 1);
+    const vrem = new THREE.Matrix4(), vremQ = new THREE.Quaternion(), vremV = new THREE.Vector3(), ed = new THREE.Vector3(1, 1, 1), osY = new THREE.Vector3(0, 1, 0);
     function risovatDrift(k) {
       const d = s, m = D3, mm = d.m;
       // новые следы шин → в «пачку»; старые по кругу заменяются новыми
       d.novyeSledy.forEach(([x, y, a]) => {
-        vremQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a);
-        vrem.compose(vremV.set(v3x(x), 0, v3z(y)), vremQ, ed);
+        vremQ.setFromAxisAngle(osY, -a);
+        vrem.compose(vremV.set(dX(x), 0, dZ(y)), vremQ, ed);
         m.sledy.setMatrixAt(m.sledN % MAX_SLEDOV, vrem); m.sledN++;
         const dym = m.dym.find((p) => p.userData.zhizn <= 0);  // и облачко дыма
         if (dym && Math.random() < 0.5) {
-          dym.userData.zhizn = 1; dym.position.set(v3x(x), 0.4, v3z(y)); dym.scale.setScalar(0.8);
+          dym.userData.zhizn = 1; dym.position.set(dX(x), 0.4, dZ(y)); dym.scale.setScalar(0.8);
         }
       });
       if (d.novyeSledy.length) m.sledy.instanceMatrix.needsUpdate = true;
@@ -1090,11 +1215,21 @@
         p.position.y += 0.03 * k; p.scale.multiplyScalar(1 + 0.025 * k);
         p.material.opacity = Math.max(0, p.userData.zhizn * 0.45);
       });
-      postavit(igrok, mm.x, mm.y, mm.a);
+      const cx = dX(mm.x), cz = dZ(mm.y);
+      igrok.position.set(cx, 0, cz); igrok.rotation.y = -mm.a;
       animirovatMashinu(igrok, (d.skor || 0) * k / 10 * 3, rulKlav(), Math.max(-0.08, Math.min(0.08, -(d.zanos || 0) * 0.02)));
-      // камера летит за машиной сзади
-      kameraZa(v3x(mm.x), v3z(mm.y), mm.a, k);
+      m.luna.position.set(cx + 14, 30, cz + 12); m.luna.target.position.set(cx, 0, cz);   // тени — вокруг машины
+      kameraZa(cx, cz, mm.a, k);
       hud(["⏱️ " + Math.ceil(d.vremya / 60) + " с", "🌀 " + d.ochki, d.kombo > 0.3 ? "🔥 x" + (1 + Math.min(d.kombo, 5)).toFixed(1) : "Газ + руль + ✋ ручник"]);
+      miniKartaDrift(mm);
+    }
+    function miniKartaDrift(mm) {
+      const c = $("minikarta").getContext("2d"), S = 220, m = S / DH, ox = (S - DW * m) / 2;
+      c.fillStyle = "rgba(20,24,34,.9)"; c.fillRect(0, 0, S, S);
+      c.fillStyle = "#30343b"; c.fillRect(ox, 0, DW * m, S);
+      OSTROV.forEach((o) => { c.fillStyle = o.konus ? "#ff6d00" : "#2e7d32"; c.fillRect(ox + o.x * m, o.y * m, Math.max(2, o.w * m), Math.max(2, o.h * m)); });
+      c.save(); c.translate(ox + mm.x * m, mm.y * m); c.rotate(mm.a);
+      c.fillStyle = "#ff5252"; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 5); c.lineTo(-5, 5); c.closePath(); c.fill(); c.restore();
     }
 
 
@@ -1132,17 +1267,34 @@
       return g;
     }
     // человечек: голова, тело, руки и ноги (руки-ноги качаются при ходьбе)
-    function sozdatCheloveka(rubashka = 0x1e88e5, shtany = 0x263238, kozha = 0xffcc99) {
+    // человечек; od — одежда: { futbolka, shtany, obuv, volosy, shapka: "net" | "kepka" | "shlem" | "shapka" }
+    function sozdatCheloveka(od = {}) {
+      const rubashka = od.futbolka || "#1e88e5", shtany = od.shtany || "#263238", kozha = od.kozha || "#ffcc99";
       const g = new THREE.Group(), m = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
       const telo = set(new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.75, 0.36, 3, 0.12), m(rubashka)), 0, 1.22, 0);
       const golova = set(new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 14), m(kozha)), 0, 1.82, 0);
-      const volosy = set(new THREE.Mesh(new THREE.SphereGeometry(0.255, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m(0x2b1b10)), 0, 1.86, 0.02);
-      const noga = (x) => { const p = set(new THREE.Group(), x, 0.86, 0); p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.86, 0.24, 2, 0.08), m(shtany)), 0, -0.43, 0)); return p; };
+      const volosy = set(new THREE.Mesh(new THREE.SphereGeometry(0.255, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m(od.volosy || "#2b1b10")), 0, 1.86, 0.02);
+      const noga = (x) => { const p = set(new THREE.Group(), x, 0.86, 0);
+        p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.86, 0.24, 2, 0.08), m(shtany)), 0, -0.43, 0));
+        p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.25, 0.13, 0.36, 2, 0.05), m(od.obuv || "#fafafa")), 0, -0.82, -0.05));   // кроссовки
+        return p; };
       const ruka = (x) => { const p = set(new THREE.Group(), x, 1.55, 0); p.add(set(new THREE.Mesh(new RoundedBoxGeometry(0.17, 0.7, 0.18, 2, 0.07), m(rubashka)), 0, -0.33, 0)); return p; };
       const nogi = [noga(-0.15), noga(0.15)], ruki = [ruka(-0.42), ruka(0.42)];
-      g.add(telo, golova, volosy, ...nogi, ...ruki);
+      g.add(telo, golova, ...nogi, ...ruki);
+      const sh = od.shapka || "net";
+      if (sh !== "shlem") g.add(volosy);
+      if (sh === "kepka") {                                      // кепка с козырьком
+        g.add(set(new THREE.Mesh(new THREE.SphereGeometry(0.262, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m(od.shapkaCvet || "#d32f2f")), 0, 1.88, 0));
+        g.add(set(new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.22), m(od.shapkaCvet || "#d32f2f")), 0, 1.89, -0.3));
+      } else if (sh === "shapka") {                              // зимняя шапка с помпоном
+        g.add(set(new THREE.Mesh(new THREE.SphereGeometry(0.265, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m(od.shapkaCvet || "#d32f2f")), 0, 1.9, 0));
+        g.add(set(new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), m("#ffffff")), 0, 2.17, 0));
+      } else if (sh === "shlem") {                               // гоночный шлем со стеклом
+        g.add(set(new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 16), m(od.shapkaCvet || "#d32f2f")), 0, 1.84, 0));
+        g.add(set(new THREE.Mesh(new THREE.SphereGeometry(0.302, 24, 8, Math.PI * 0.7, Math.PI * 0.6, Math.PI * 0.35, Math.PI * 0.25), MAT.steklo), 0, 1.84, 0));
+      }
       g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-      g.userData = { nogi, ruki };
+      g.userData = { nogi, ruki, klyuch: JSON.stringify(od) };
       return g;
     }
     function shagat(chel, faza, sila) {                       // анимация ходьбы
@@ -1256,8 +1408,8 @@
        [99, -80, 0, "#ffb300", "zoloto", "sport"]].forEach(([x, z, a, c, id, tip]) => dobavit(x, z, a, c, id, tip));
       mashiny.find((m) => m.id === "zoloto").model.userData.okrashennye.forEach((o) => (o.material = new THREE.MeshPhysicalMaterial({ color: 0xffc107, metalness: 1, roughness: 0.18, clearcoat: 1 })));
 
-      const chelovek = sozdatCheloveka(); chelovek.visible = false; sc.add(chelovek);
-      const passazhir = sozdatCheloveka(0xe91e63, 0x37474f, 0xe0ac69); sc.add(passazhir); passazhir.visible = false;
+      const chelovek = sozdatCheloveka(sohr.odezhda); chelovek.visible = false; sc.add(chelovek);
+      const passazhir = sozdatCheloveka({ futbolka: "#e91e63", shtany: "#37474f", kozha: "#e0ac69", volosy: "#111" }); sc.add(passazhir); passazhir.visible = false;
       const mayak = mayakCeli(0xffd600, 3.5); sc.add(mayak);
       const strelka = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 4).rotateX(-Math.PI / 2),
         new THREE.MeshStandardMaterial({ color: 0xffd600, emissive: 0xffb300, emissiveIntensity: 1.5 }));
@@ -1331,6 +1483,9 @@
       c.mashiny.forEach((m) => { if (m.id === "moya") m.model = zamenitMashinu(c.sc, m.model); });
       const moya = c.mashiny.find((m) => m.id === "moya");
       Object.assign(moya, { x: -17, z: 60, a: 0, vx: 0, vz: 0 });
+      if (c.chelovek.userData.klyuch !== JSON.stringify(sohr.odezhda)) {    // переоделся в гараже — новый человечек
+        c.sc.remove(c.chelovek); c.chelovek = sozdatCheloveka(sohr.odezhda); c.chelovek.userData.klyuch = JSON.stringify(sohr.odezhda); c.sc.add(c.chelovek);
+      }
       c.chelovek.visible = false; c.passazhir.visible = false; c.mayak.visible = false; c.strelka.visible = false;
       c.monety.forEach((m) => (m.visible = false));
       kamera.fov = 62; kamera.updateProjectionMatrix();
