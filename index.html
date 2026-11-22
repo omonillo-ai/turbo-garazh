@@ -155,6 +155,9 @@
 
     <div class="karta">
       <h2>🔧 Тюнинг</h2>
+      <div>🔢 Свой номер</div>
+      <div class="tyun"><input id="nomerVvod" maxlength="10" style="flex:1;font-size:16px;padding:6px 8px;border-radius:8px;border:2px solid #4fc3f7;text-transform:uppercase">
+        <button id="nomerSohr">💾</button></div>
       <div id="tyuning"></div>
     </div>
 
@@ -220,7 +223,15 @@
     <div class="pult2" id="pult2" style="margin-top:6px">
       <button id="knVyhod">🚪 Выйти</button>
       <button id="knMissii">📋 Миссии</button>
+      <button id="knKarta">🗺️ Карта</button>
     </div>
+  </div>
+
+  <!-- ===== 🗺️ БОЛЬШАЯ КАРТА: нажми, чтобы поставить метку ===== -->
+  <div id="kartaOkno" style="position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:7">
+    <div style="color:#fff;margin:6px;font-weight:bold">🗺️ Нажми на карту — поставлю метку 📍 (нажми ещё раз на метку — уберу)</div>
+    <canvas id="bolshayaKarta" width="900" height="900" style="width:min(96vw,80vh);height:min(96vw,80vh);border-radius:14px;border:2px solid #4fc3f7;touch-action:none"></canvas>
+    <button class="prozr" style="margin:8px" onclick="document.getElementById('kartaOkno').style.display='none'">Закрыть</button>
   </div>
 
   <!-- ===== СПИСОК МИССИЙ ===== -->
@@ -257,7 +268,7 @@
     import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
     // ================= 1) СОХРАНЕНИЕ (localStorage) =================
-    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], tip: "sport", tipy: ["sport"], tun: { disk: "serebro", spoiler: "standart", neon: "net", podveska: "obych", ton: "obych" }, tunKupleno: [], odezhda: { futbolka: "#1e88e5", shtany: "#263238", obuv: "#fafafa", volosy: "#2b1b10", shapka: "net", shapkaCvet: "#d32f2f" }, rekord: { gonka: 0, drift: 0 }, park: 1 };
+    let sohr = { monety: 0, skorost: 1, upr: 1, cvet: "#eceff1", kupleno: ["#eceff1"], tip: "sport", tipy: ["sport"], tun: { disk: "serebro", spoiler: "standart", neon: "net", podveska: "obych", ton: "obych", vinil: "net" }, nomer: "01 777 REAL", gryaz: 0, tunKupleno: [], odezhda: { futbolka: "#1e88e5", shtany: "#263238", obuv: "#fafafa", volosy: "#2b1b10", shapka: "net", shapkaCvet: "#d32f2f" }, rekord: { gonka: 0, drift: 0 }, park: 1 };
     try { Object.assign(sohr, JSON.parse(localStorage.getItem("turboGarazh") || "{}")); } catch (e) {}
     function sohranit() { try { localStorage.setItem("turboGarazh", JSON.stringify(sohr)); } catch (e) {} }
 
@@ -414,11 +425,18 @@
       const g = c.createRadialGradient(64, 64, 4, 64, 64, 64); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(1, "rgba(255,255,255,0)");
       c.fillStyle = g; c.fillRect(0, 0, 128, 128);
     });
-    // номерной знак с надписью
-    const NOMER = new THREE.MeshStandardMaterial({ roughness: 0.5, map: tekstura(256, 64, (c, w, h) => {
-      c.fillStyle = "#f5f5f5"; c.fillRect(0, 0, w, h); c.strokeStyle = "#222"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6);
-      c.fillStyle = "#111"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("REAL", w / 2, h / 2 + 2);
-    }) });
+    // 🔢 номерной знак: белый, слева красный флажок и «KG», справа — надпись
+    const NOMERA = new Map();
+    function nomerMat(tekst) {
+      if (!NOMERA.has(tekst)) NOMERA.set(tekst, new THREE.MeshStandardMaterial({ roughness: 0.5, map: tekstura(256, 64, (c, w, h) => {
+        c.fillStyle = "#f5f5f5"; c.fillRect(0, 0, w, h); c.strokeStyle = "#222"; c.lineWidth = 5; c.strokeRect(3, 3, w - 6, h - 6);
+        c.fillStyle = "#e8112d"; c.fillRect(8, 9, 30, 22); c.fillStyle = "#ffd600"; c.beginPath(); c.arc(23, 20, 6, 0, 7); c.fill();
+        c.fillStyle = "#1565c0"; c.font = "bold 16px Arial"; c.textAlign = "center"; c.fillText("KG", 23, 52);
+        c.fillStyle = "#111"; c.font = "bold " + (tekst.length > 8 ? 30 : 36) + "px Arial"; c.textBaseline = "middle"; c.fillText(tekst, 148, h / 2 + 2);
+      }) }));
+      return NOMERA.get(tekst);
+    }
+    const SLUCH_NOMERA = Array.from({ length: 16 }, (_, i) => "0" + (1 + (i % 9)) + " " + (100 + ((i * 397) % 900)) + " " + "ABEKMHOPCTX"[i % 11] + "ABEKMHOPCTX"[(i * 7) % 11] + "ABEKMHOPCTX"[(i * 3) % 11]);
     // мягкая тень прямо под машиной — машина «стоит» на земле, а не висит
     const TEN = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: tekstura(128, 128, (c) => {
       const g = c.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, "rgba(0,0,0,.75)"); g.addColorStop(1, "rgba(0,0,0,0)");
@@ -452,6 +470,9 @@
       // классический седан 90-х: длинный низкий кузов, длинный ровный багажник, высокая линия окон
       klassika: { r: 0.43, osX: 1.02, pered: 1.48, zad: -1.38, dno: 0.42, kapot: [[2.22, 0.84], [0.85, 0.98]], poyas: -1.55, poyasY: 1.02, zadY: 0.98,
                   kabina: [[0.85, 0.98], [0.35, 1.36], [0.1, 1.49], [-0.85, 1.51], [-1.15, 1.42], [-1.6, 1.03]], farY: 0.7, stopY: 0.8, trub: 1, bampery: true, klassika: true },
+      // компактный хэтчбек: длинный капот, кабина сдвинута назад, короткий зад
+      kompakt:  { r: 0.45, osX: 1.04, pered: 1.45, zad: -1.38, dno: 0.42, kapot: [[2.2, 0.8], [0.75, 1.0]], poyas: -2.05, poyasY: 1.04, zadY: 1.05,
+                  kabina: [[0.75, 1.0], [0.2, 1.42], [-0.2, 1.56], [-1.25, 1.56], [-1.85, 1.42], [-2.1, 1.06]], farY: 0.78, stopY: 1.02, trub: 2, kompakt: true },
       miniven:  { r: 0.46, osX: 1.08, pered: 1.4, zad: -1.4, dno: 0.48, kapot: [[2.15, 0.95], [1.35, 1.12]], poyas: -2.15, poyasY: 1.2, zadY: 1.2,
                   kabina: [[1.35, 1.12], [0.75, 1.7], [0.2, 2.02], [-1.2, 2.06], [-2.0, 2.0], [-2.2, 1.22]], farY: 0.88, stopY: 1.25, trub: 2 }
     });
@@ -511,7 +532,8 @@
     // prostaya = true — «лёгкая» машина без мелких деталей (для толпы машин, чтобы игра не тормозила)
     function sozdatMashinu(cvet, tip = "sport", tun = null, prostaya = false) {
       const spoilerTip = tun && tun.spoiler === "bolshoi" ? "big" : tun && tun.spoiler === "net" ? null : TIPY[tip].spoiler ? "mal" : null;
-      const t = TIPY[tip], G = geoTipa(tip), g = new THREE.Group(), kr = kraska(cvet), okrashennye = [];
+      const t = TIPY[tip], G = geoTipa(tip), g = new THREE.Group(), okrashennye = [];
+      const kr = tun ? kraska(cvet).clone() : kraska(cvet);           // у машины игрока своя краска — она пачкается
       const kras = (geo) => { const m = new THREE.Mesh(geo, kr); okrashennye.push(m); return m; };
       const add = (m, x, y, z, ten = false) => { set(m, x, y, z); if (ten && !prostaya) m.castShadow = true; g.add(m); return m; };
       const melk = (m, x, y, z) => (prostaya ? m : add(m, x, y, z));   // мелкая деталь — только у «полной» машины
@@ -560,8 +582,9 @@
       add(new THREE.Mesh(GEO.stopPolosa, MAT.stop), 0, t.stopY + 0.02, zadZ + 0.01);              // световая полоса через весь зад
       add(new THREE.Mesh(GEO.vozduh, MAT.plastik), 0, t.dno + 0.13, perZ + 0.05);                 // воздухозаборник
       melk(new THREE.Mesh(GEO.diffuzor, MAT.plastik), 0, t.dno + 0.08, zadZ - 0.03);
-      const np = add(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, perZ - 0.02); np.rotation.y = Math.PI;
-      melk(new THREE.Mesh(GEO.nomer, NOMER), 0, t.dno + 0.32, zadZ + 0.06);
+      const nm = nomerMat(tun ? (sohr.nomer || "01 777 REAL") : SLUCH_NOMERA[Math.floor(Math.random() * SLUCH_NOMERA.length)]);
+      const np = add(new THREE.Mesh(GEO.nomer, nm), 0, t.dno + 0.32, perZ - 0.02); np.rotation.y = Math.PI;
+      melk(new THREE.Mesh(GEO.nomer, nm), 0, t.dno + 0.32, zadZ + 0.06);
       const trub = t.trub === 4 ? [-0.62, -0.45, 0.45, 0.62] : [-0.55, 0.55];
       trub.forEach((x) => melk(new THREE.Mesh(GEO.truba, MAT.hrom), x, t.dno + 0.08, zadZ + 0.04));
       if (t.bort) add(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 1.3), MAT.chernyi), 0, t.poyasY + 0.13, 1.6);   // кузов пикапа
@@ -616,16 +639,21 @@
         const fary = new THREE.SpotLight(0xfff1d6, 160, 45, 0.42, 0.5, 1.6);
         fary.position.set(0, t.farY, -2.3); fary.target.position.set(0, 0, -16); g.add(fary, fary.target); g.userData.faryLuch = fary;
       }
-      Object.assign(g.userData, { kolesa, perednie, okrashennye, tip, klyuch: tip + JSON.stringify(tun), povL, povR, faraMat });
+      if (tun && tun.vinil && tun.vinil !== "net") dobavitVinil(g, t, tun.vinil, cvet);
+      if (t.kompakt) {                                         // компакт: узкие «хищные» фары и широкий воздухозаборник
+        [-1, 1].forEach((s) => { const f = add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.13, 0.08), faraMat), s * 0.74, t.farY + 0.04, -2.43); f.rotation.z = s * 0.18; f.rotation.y = s * 0.3; });
+        add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.22, 0.08), MAT.chernyi), 0, t.dno + 0.18, -2.44);
+      }
+      Object.assign(g.userData, { kolesa, perednie, okrashennye, tip, klyuch: tip + JSON.stringify(tun) + (tun ? sohr.nomer : ""), povL, povR, faraMat, kraskaIgroka: tun ? kr : null, cvet });
       return g;
     }
-    const TIPY_SPISOK = ["sedan", "dzhip", "sport", "hetchbek", "pikap", "miniven", "superkar", "klassika"];
+    const TIPY_SPISOK = ["sedan", "dzhip", "sport", "hetchbek", "pikap", "miniven", "superkar", "klassika", "kompakt"];
     const MODELI = [{ tip: "sport", nazv: "🏎️ Спорткар", cena: 0 }, { tip: "hetchbek", nazv: "🚘 Хэтчбек", cena: 80 }, { tip: "sedan", nazv: "🚗 Седан", cena: 100 },
-      { tip: "klassika", nazv: "🚘 Классика 90-х", cena: 120 }, { tip: "miniven", nazv: "🚐 Минивэн", cena: 120 }, { tip: "dzhip", nazv: "🚙 Джип", cena: 150 }, { tip: "pikap", nazv: "🛻 Пикап", cena: 150 },
+      { tip: "klassika", nazv: "🚘 Классика 90-х", cena: 120 }, { tip: "kompakt", nazv: "🚙 Компакт", cena: 140 }, { tip: "miniven", nazv: "🚐 Минивэн", cena: 120 }, { tip: "dzhip", nazv: "🚙 Джип", cena: 150 }, { tip: "pikap", nazv: "🛻 Пикап", cena: 150 },
       { tip: "superkar", nazv: "🏁 Суперкар", cena: 300 }];
     // если игрок выбрал другую машину — меняем 3D-модель на новую (на том же месте)
     function zamenitMashinu(sc, staraya) {
-      if (staraya.userData.klyuch === sohr.tip + JSON.stringify(sohr.tun)) { perekrasit(staraya, sohr.cvet); return staraya; }
+      if (staraya.userData.klyuch === sohr.tip + JSON.stringify(sohr.tun) + sohr.nomer) { perekrasit(staraya, sohr.cvet); return staraya; }
       const n = sozdatMashinu(sohr.cvet, sohr.tip, sohr.tun);
       n.position.copy(staraya.position); n.rotation.copy(staraya.rotation); n.visible = staraya.visible;
       sc.remove(staraya); sc.add(n); return n;
@@ -643,7 +671,58 @@
       if (u.faraMat && u.faraMat !== MAT.fara) u.faraMat.emissiveIntensity = vkl ? 3 : 0.15;
       if (u.faryLuch) u.faryLuch.visible = vkl && model !== vitrina.mashina;
     }
-    function perekrasit(mashina, cvet) { mashina.userData.okrashennye.forEach((m) => (m.material = kraska(cvet))); }
+    function perekrasit(mashina, cvet) {
+      const ki = mashina.userData.kraskaIgroka;
+      if (ki) { mashina.userData.cvet = cvet; primenitGryaz(mashina); return; }
+      mashina.userData.okrashennye.forEach((m) => (m.material = kraska(cvet)));
+    }
+    // 🟤 ГРЯЗЬ: чем больше ездишь (особенно по земле и зимой), тем грязнее машина. Моется на автомойке.
+    const GRYAZ_CVET = new THREE.Color(0x6e5c46);
+    function primenitGryaz(model) {
+      const ki = model.userData.kraskaIgroka; if (!ki) return;
+      const g = Math.min(1, sohr.gryaz || 0);
+      ki.color.set(model.userData.cvet || sohr.cvet).lerp(GRYAZ_CVET, g * 0.6);
+      ki.roughness = 0.28 + g * 0.6; ki.clearcoat = 1 - g * 0.9; ki.metalness = 0.55 - g * 0.4;
+    }
+    function zapachkat(skor, k, mnozh = 1) { sohr.gryaz = Math.min(1, (sohr.gryaz || 0) + skor * k * 0.00006 * mnozh); }
+    // 🎨 ВИНИЛЫ: наклейки на кузов
+    const VINIL_TEX = {};
+    function vinilTex(vid) {
+      if (VINIL_TEX[vid]) return VINIL_TEX[vid];
+      VINIL_TEX[vid] = tekstura(512, 96, (c, w, h) => {
+        if (vid === "ogon") {                                    // языки пламени от переда к середине
+          for (let i = 0; i < 9; i++) { const y = 15 + i * 8, d = 200 + Math.sin(i * 1.7) * 90;
+            const gr = c.createLinearGradient(0, 0, d, 0); gr.addColorStop(0, "#ffd600"); gr.addColorStop(0.5, "#ff6d00"); gr.addColorStop(1, "rgba(213,0,0,0)");
+            c.fillStyle = gr; c.beginPath(); c.moveTo(0, y - 6); c.quadraticCurveTo(d * 0.6, y - 14, d, y); c.quadraticCurveTo(d * 0.6, y + 10, 0, y + 8); c.fill(); }
+        } else if (vid === "shashki") {
+          for (let x = 0; x < w; x += 16) for (let y = 30; y < 66; y += 12) { c.fillStyle = ((x / 16 + y / 12) | 0) % 2 ? "#111" : "#fff"; c.fillRect(x, y, 16, 12); }
+        } else if (vid === "nomer7") {
+          c.fillStyle = "#fff"; c.beginPath(); c.arc(w / 2, h / 2, 40, 0, 7); c.fill(); c.fillStyle = "#111"; c.font = "bold 62px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("7", w / 2, h / 2 + 3);
+        } else if (vid === "molniya") {
+          c.fillStyle = "#00e5ff"; c.beginPath(); c.moveTo(40, 30); c.lineTo(250, 22); c.lineTo(230, 46); c.lineTo(470, 38); c.lineTo(260, 72); c.lineTo(280, 52); c.lineTo(40, 62); c.fill();
+        }
+      });
+      return VINIL_TEX[vid];
+    }
+    function dobavitVinil(g, t, vid, cvet) {
+      if (vid === "polosy") {                                   // две гоночные полосы по капоту, крыше и багажнику
+        const svetlaya = new THREE.Color(cvet).getHSL({}).l > 0.6, m = new THREE.MeshStandardMaterial({ color: svetlaya ? 0x111111 : 0xffffff, roughness: 0.4 });
+        const kapotY = (t.kapot[0][1] + t.kapot[1][1]) / 2 + 0.13, kryshaY = t.kabina[3][1] + 0.1, bagY = t.zadY + 0.12;
+        [-0.22, 0.22].forEach((x) => {
+          g.add(set(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 2.4 - t.kabina[0][0] + 0.2), m), x, kapotY, -(2.3 + t.kabina[0][0]) / 2));
+          g.add(set(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.9), m), x, kryshaY, -t.kabina[3][0] - 0.3));
+          g.add(set(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.6), m), x, bagY, 2.0));
+        });
+        return;
+      }
+      const mat = new THREE.MeshBasicMaterial({ map: vinilTex(vid), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+      [-1, 1].forEach((s) => {                                   // наклейка на каждый бок
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.62), mat);
+        p.position.set(s * 1.215, (t.dno + t.poyasY) / 2 + 0.08, -0.1); p.rotation.y = s * Math.PI / 2;
+        if (s < 0) p.scale.x = -1;                               // чтобы рисунок на обоих боках смотрел вперёд
+        g.add(p);
+      });
+    }
     // крутим колёса и руль; naklon — машина чуть наклоняется в повороте (как настоящая)
     function animirovatMashinu(mashina, skorost, rul, naklon = 0) {
       if (mashina.userData.rulSalon) mashina.userData.rulSalon.rotation.z = -rul * 1.6;   // руль в салоне крутится
@@ -747,7 +826,8 @@
       { k: "spoiler", nazv: "🪽 Спойлер", v: [["standart", "Обычный", 0], ["net", "Без", 0], ["bolshoi", "Большое крыло", 100]] },
       { k: "neon", nazv: "💡 Неон под днищем", v: [["net", "Нет", 0], ["sin", "Синий", 120], ["kras", "Красный", 120], ["zel", "Зелёный", 120], ["fiol", "Фиолет", 120]] },
       { k: "podveska", nazv: "⬇️ Подвеска", v: [["obych", "Обычная", 0], ["nizko", "Заниженная", 60]] },
-      { k: "ton", nazv: "🕶️ Тонировка", v: [["obych", "Обычная", 0], ["chern", "Чёрная", 30]] }
+      { k: "ton", nazv: "🕶️ Тонировка", v: [["obych", "Обычная", 0], ["chern", "Чёрная", 30]] },
+      { k: "vinil", nazv: "🎨 Винил (наклейки)", v: [["net", "Нет", 0], ["polosy", "Гоночные полосы", 60], ["ogon", "Огонь 🔥", 100], ["shashki", "Шашечки 🏁", 80], ["molniya", "Молния ⚡", 90], ["nomer7", "Номер 7", 50]] }
     ];
     const GARDEROB = [
       { k: "futbolka", nazv: "👕 Футболка", cveta: ["#1e88e5", "#e53935", "#43a047", "#fdd835", "#212121", "#ffffff", "#8e24aa", "#fb8c00"] },
@@ -784,6 +864,12 @@
         vitrina.scena.add(vitrina.chel);
       }
     }
+    $("nomerVvod").value = sohr.nomer || "";
+    $("nomerSohr").onclick = () => {
+      const n = $("nomerVvod").value.toUpperCase().replace(/[^0-9A-ZА-ЯЁ ]/g, "").trim().slice(0, 10);
+      if (!n) return;
+      sohr.nomer = n; $("nomerVvod").value = n; sohranit(); zvukMoneta(); risovatGarazh();
+    };
     function tyuningChiz() {
       const box = $("tyuning"); box.innerHTML = "";
       TYUNING.forEach(({ k, nazv, v }) => {
@@ -1491,12 +1577,14 @@
       return best;
     }
     const VERSHINA = naitiVershinu();
+    const MAGISTRAL_Z = -240;
     const DEREVNI = [[180, -180, "🏡 Деревня Восток"], [-200, 190, "🏡 Деревня Запад"], [190, 190, "🏡 Деревня Юг"]];
     // дороги вне города: [точки], ширина
     const ZAGORODNYE = [
       [[[-306, -300], [306, -300]], 12], [[[-306, 300], [306, 300]], 12], [[[-300, -306], [-300, 306]], 12], [[[300, -306], [300, 306]], 12],  // кольцо
       [[[-20, -104], [-20, -300]], 10], [[[-20, 104], [-20, 300]], 10], [[[104, 20], [300, 20]], 10], [[[-104, 20], [-300, 20]], 10],          // лучи
-      [Array.from({ length: 40 }, (_, i) => { const z = -300 - i * 4.3; return [-20 + 40 * Math.sin((z + 300) / 22) * gladko(-300, -330, z), z]; }), 9] // серпантин в горы
+      [Array.from({ length: 40 }, (_, i) => { const z = -300 - i * 4.3; return [-20 + 40 * Math.sin((z + 300) / 22) * gladko(-300, -330, z), z]; }), 9], // серпантин в горы
+      [[[-488, MAGISTRAL_Z], [488, MAGISTRAL_Z]], 18]           // 🛣️ МАГИСТРАЛЬ: 4 полосы через весь мир, с запада на восток (через горы)
     ];
 
     // лента дороги, которая лежит на земле (повторяет холмы)
@@ -1579,7 +1667,7 @@
       const naDoroge = (x, z) => ZAGORODNYE.some(([t, sh]) => t.some(([px, pz], i) => i < t.length - 1 &&
         otrezok(x, z, px, pz, t[i + 1][0], t[i + 1][1]) < sh / 2 + 5));
       const stvoly = [], mt = new THREE.Matrix4(), q = new THREE.Quaternion(), sv = new THREE.Vector3(), pv = new THREE.Vector3();
-      for (let tr = 0; tr < 2600 && stvoly.length < 900; tr++) {
+      for (let tr = 0; tr < 4200 && stvoly.length < 1400; tr++) {
         const x = (sluch() - 0.5) * 960, z = (sluch() - 0.5) * 960, d = Math.max(Math.abs(x), Math.abs(z)), h = vysota(x, z);
         if (d < 118 || h > 34 || naDoroge(x, z) || DEREVNI.some(([vx, vz]) => Math.hypot(x - vx, z - vz) < 36)) continue;
         if (Math.hypot(x - VERSHINA[0], z - VERSHINA[1]) < 12) continue;
@@ -1796,7 +1884,7 @@
         }
         // 🏥 больница, 🚓 отделение милиции, 🔧 СТО — особые здания
         const osoboe = i === 4 && j === 0 ? ["🏥 БОЛЬНИЦА", "#f5f5f5", "#00a152", 1] : i === 0 && j === 0 ? ["🚓 МИЛИЦИЯ", "#cfd8dc", "#0d47a1", 1]
-          : i === 4 && j === 4 ? ["🔧 СТО · РЕМОНТ", "#ffe0b2", "#e65100", -1] : null;
+          : i === 4 && j === 4 ? ["🔧 СТО · РЕМОНТ", "#ffe0b2", "#e65100", -1] : i === 3 && j === 4 ? ["🧽 АВТОМОЙКА", "#e1f5fe", "#0288d1", -1] : null;
         if (osoboe) {
           const [imya, cvSten, cvZnak, storona] = osoboe;
           const zd = new THREE.Mesh(new THREE.BoxGeometry(26, 11, 20), [st0(cvSten), st0(cvSten), krysha, krysha, st0(cvSten), st0(cvSten)]);
@@ -1942,12 +2030,14 @@
       const model = (i) => { const m = sozdatMashinu(TRAFIK_CVETA[i % TRAFIK_CVETA.length], i % 3 === 0 ? "klassika" : TIPY_SPISOK[i % TIPY_SPISOK.length], null, true);
         m.rotation.order = "YXZ"; sc.add(m); return m; };
       // по городу: os — вдоль какой оси едет, L — линия дороги, napr — вперёд (+1) или назад (−1) по оси, p — где на оси
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 28; i++) {
         const os = i % 2 ? "x" : "z", L = DOROGI[i % 6], napr = i % 4 < 2 ? 1 : -1;
         spisok.push({ gorod: true, os, L, napr, p: -90 + ((i * 37) % 180), v: 0, model: model(i), stoit: 0, x: 0, z: 0, a: 0 });
       }
       // по кольцевой дороге (квадрат 600×600 м)
       for (let i = 0; i < 8; i++) spisok.push({ koltso: true, sK: i * 300, napr: i % 2 ? 1 : -1, v: 0, model: model(i + 5), stoit: 0, x: 0, z: 0, a: 0 });
+      // по магистрали: 16 машин, 4 полосы (по 2 в каждую сторону), едут быстро
+      for (let i = 0; i < 16; i++) spisok.push({ magistral: true, sM: -470 + i * 61, napr: i % 2 ? 1 : -1, polosa: i % 4 < 2 ? 2.6 : 7.2, v: 0, model: model(i + 11), stoit: 0, x: 0, z: 0, a: 0 });
       // 🚓 милиция (3 машины) и 🚑 скорая (2 машины) тоже ездят по городу
       [["policiya", "z", -20, 1, -50], ["policiya", "x", 60, -1, 30], ["policiya", "z", 100, -1, 70], ["skoraya", "x", -60, 1, -10], ["skoraya", "z", 60, 1, 80]]
         .forEach(([vid, os, L, napr, p]) => spisok.push({ gorod: true, vid, os, L, napr, p, v: 0, model: sozdatSpecMashinu(vid, sc), stoit: 0, x: 0, z: 0, a: 0 }));
@@ -1956,6 +2046,9 @@
     }
     // где стоит машина трафика в мире (x, z) и куда смотрит (a)
     function polozhenieTrafika(t) {
+      if (t.magistral) {
+        t.a = t.napr > 0 ? Math.PI / 2 : -Math.PI / 2; t.x = t.sM; t.z = MAGISTRAL_Z + t.napr * t.polosa; return;
+      }
       if (t.gorod) {
         if (Math.abs(t.p) > 101) { t.p = Math.sign(t.p) * 100; t.napr = -Math.sign(t.p); }   // на всякий случай: не уезжать из города
         if (t.os === "z") { t.x = t.L - 2.5 * t.napr; t.z = t.p; t.a = t.napr < 0 ? 0 : Math.PI; }
@@ -1998,6 +2091,12 @@
         t.v = stop ? Math.max(0, t.v - 0.03 * k) : Math.min(maxV, t.v + 0.004 * k);
         t.stoit = t.v < 0.02 ? t.stoit + k : 0;
         if (t.koltso) { t.sK += t.v * k * t.napr; polozhenieTrafika(t); return; }
+        if (t.magistral) {                                       // магистраль: быстро; доехал до края мира — появляется с другой стороны
+          t.v = Math.min(t.v, stop ? t.v : (c.zima ? 0.32 : 0.45)); if (!stop) t.v = Math.min(c.zima ? 0.32 : 0.45, t.v + 0.006 * k);
+          t.sM += t.v * k * t.napr;
+          if (Math.abs(t.sM) > 486) { t.sM = -Math.sign(t.sM) * 484; t.teleport = true; }
+          polozhenieTrafika(t); return;
+        }
         const c0 = sledPerekrestok(t.p, t.napr);
         // за 15 м до перекрёстка решаем, куда ехать, и включаем поворотник
         if (c0 !== undefined && t.plan === undefined && Math.abs(c0 - t.p) < 15) {
@@ -2026,8 +2125,10 @@
     function risovatTrafik(k) {
       C3.trafik.forEach((t) => {
         const m = t.model;
+        if (t.teleport) { m.position.set(t.x, 0, t.z); t.teleport = false; }
         m.position.x += (t.x - m.position.x) * Math.min(1, 0.25 * Math.max(k, 0.3));
         m.position.z += (t.z - m.position.z) * Math.min(1, 0.25 * Math.max(k, 0.3));
+        m.position.y = t.magistral ? vysota(m.position.x, m.position.z) : 0;   // магистраль идёт через горы
         let d = -t.a - m.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d));
         m.rotation.y += d * Math.min(1, 0.2 * Math.max(k, 0.3));
         animirovatMashinu(m, t.v * k * 3, 0, 0);
@@ -2243,6 +2344,21 @@
     }
 
     // ---- 🔧 СТО: заехал на ремонт — машина как новая (50 🪙) ----
+    // 🧽 АВТОМОЙКА: заехал и остановился — машина чистая (20 🪙)
+    const MOIKA = { x: 40, z: 60 };
+    function proveritMoiku() {
+      const m = s.vMashine;
+      if (!m || (sohr.gryaz || 0) < 0.05 || m.id !== "moya") return;
+      if (Math.hypot(m.x - MOIKA.x, m.z - MOIKA.z) > 5 || Math.hypot(m.vx, m.vz) > 0.05) return;
+      if (sohr.monety < 20) { podskazka("🧽 Мойка стоит 20 🪙 — не хватает монет"); return; }
+      sohr.monety -= 20; sohr.gryaz = 0; sohranit();
+      for (let i = 0; i < 25; i++) setTimeout(() => {                    // пена и брызги
+        const d = C3.dymPul.find((q) => q.userData.zh <= 0); if (!d) return;
+        d.position.set(m.x + (Math.random() - 0.5) * 3, 0.5 + Math.random() * 1.5, m.z + (Math.random() - 0.5) * 4); d.scale.setScalar(1.2); d.material.color.set(0xe3f2fd); d.userData.zh = 1;
+      }, i * 40);
+      bip(800, 0.2, "sine", 0.06); bip(1200, 0.3, "sine", 0.05, 0.2);
+      banner("🧽 Машина блестит как новая!<br><small>−20 🪙</small>", 2200);
+    }
     function proveritSTO() {
       const m = s.vMashine;
       if (!m || m.hp === undefined || m.hp >= 100) return;
@@ -2326,7 +2442,13 @@
     }
     function gdeIgrok() { return s.vMashine ? { x: s.vMashine.x, z: s.vMashine.z } : s.chel; }
     function celShaga() {
-      const mi = s.missiya; if (!mi) return null;
+      const mi = s.missiya;
+      if (!mi) {                                                 // нет миссии — ведём к метке 📍
+        if (!s.metka) return null;
+        const ig = gdeIgrok();
+        if (Math.hypot(s.metka.x - ig.x, s.metka.z - ig.z) < 7) { s.metka = null; bip(988, 0.12, "triangle", 0.1); banner("📍 Ты на месте!", 1500); return null; }
+        return s.metka;
+      }
       const sh = mi.ms.shagi[mi.shag];
       if (sh.tip === "tochka") return { x: sh.x, z: sh.z };
       if (sh.tip === "sest") { const m = C3.mashiny.find((q) => q.id === sh.id); return { x: m.x, z: m.z }; }
@@ -2409,7 +2531,11 @@
       c.mashiny.forEach((m) => ehatMashina(m, k, m === s.vMashine));
       ehatTrafik(k);
       obnovitMiliciyu(k, tt);
-      if (!s.smert) proveritSTO();
+      if (!s.smert) { proveritSTO(); proveritMoiku(); }
+      if (s.vMashine && s.vMashine.id === "moya") {             // машина пачкается: по земле и зимой — сильнее
+        const sk = Math.hypot(s.vMashine.vx, s.vMashine.vz), poZemle = vysota(s.vMashine.x, s.vMashine.z) > 1 || Math.max(Math.abs(s.vMashine.x), Math.abs(s.vMashine.z)) > 110;
+        zapachkat(sk, k, (poZemle ? 3 : 1) * (c.zima ? 2 : 1));
+      }
       c.trafik.forEach((tr) => { if (tr.vid === "skoraya") migat(tr.model, true, tt); });
       c.mashiny.forEach((m) => dymit(c.dymPul, m, k)); c.trafik.forEach((tr) => dymit(c.dymPul, tr.pogonya || tr, k));
       if (!s.vMashine && !s.smert) {                            // пешехода сбила машина?
@@ -2464,6 +2590,7 @@
       c.mayak.children[0].material.opacity = 0.2 + Math.sin(t * 4) * 0.08;
       c.monety.forEach((m, i) => { if (m.visible) { m.rotation.y = t * 3 + i; m.position.y = 1.2 + Math.sin(t * 3 + i) * 0.2; } });
       const cl = celShaga();
+      if (!s.missiya) { c.mayak.visible = !!s.metka; if (s.metka) c.mayak.position.set(s.metka.x, vysota(s.metka.x, s.metka.z) + 0.1, s.metka.z); }   // столб света над меткой
       c.strelka.visible = !!cl;
       if (cl) {
         c.strelka.position.set(ig.x, hIg + (s.vMashine ? 3.4 : 2.7), ig.z);
@@ -2474,10 +2601,12 @@
       if (s.vMashine) stroki.push("🔧 " + Math.round(s.vMashine.hp ?? 100) + "%", "⚡ " + Math.round(Math.hypot(s.vMashine.vx, s.vMashine.vz) * 216) + " км/ч");
       else stroki.push(klav.hand ? "🏃 Бег" : "🚶 Пешком");
       if (s.rozysk) stroki.push("🚨 " + "⭐".repeat(s.rozysk));
+      if ((sohr.gryaz || 0) > 0.3 && s.vMashine && s.vMashine.id === "moya") stroki.push("🟤 Грязь " + Math.round(sohr.gryaz * 100) + "%");
       if (mi) {
         stroki.push("⏱️ " + Math.ceil(mi.vremya / 60) + " с");
         stroki.push("🎯 " + mi.ms.shagi[mi.shag].tekst + (cl ? " · " + Math.round(Math.hypot(cl.x - ig.x, cl.z - ig.z)) + " м" : ""));
-      } else stroki.push("📋 Выбери миссию");
+      } else if (s.metka && cl) stroki.push("📍 Метка · " + Math.round(Math.hypot(cl.x - ig.x, cl.z - ig.z)) + " м");
+      else stroki.push("📋 Миссии · 🗺️ Карта");
       hud(stroki);
       $("knRuchnik").innerHTML = s.vMashine ? "✋<br>ручник" : "🏃<br>бег";
       $("knVyhod").innerHTML = s.vMashine ? "🚪 Выйти" : "🚗 Сесть";
@@ -2507,6 +2636,36 @@
       c.save(); c.translate(S / 2, S / 2); c.rotate(a);
       c.fillStyle = "#ff5252"; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 5); c.lineTo(-5, 5); c.closePath(); c.fill(); c.restore();
     }
+    // 🗺️ БОЛЬШАЯ КАРТА МИРА с подписями мест
+    const MESTA = () => [[BOLNICA, "🏥 Больница"], [UCHASTOK, "🚓 Милиция"], [STO, "🔧 СТО"], [MOIKA, "🧽 Мойка"],
+      ...DEREVNI.map(([x, z, n]) => [{ x, z }, n]), [{ x: VERSHINA[0], z: VERSHINA[1] }, "🚩 Вершина"], [{ x: 0, z: MAGISTRAL_Z - 14 }, "🛣️ Магистраль"]];
+    function risovatBolshuyuKartu() {
+      const cv = $("bolshayaKarta"), c = cv.getContext("2d"), S = cv.width, m = S / 1000, px = (x) => (x + 500) * m;
+      // земля: цвет по высоте (горы темнее и со снегом)
+      for (let i = 0; i < 100; i++) for (let j = 0; j < 100; j++) {
+        const x = -500 + i * 10 + 5, z = -500 + j * 10 + 5, h = vysota(x, z);
+        c.fillStyle = C3.zima ? (h > 20 ? "#9aa4ad" : "#dfe6ec") : h > 38 ? "#e8ecef" : h > 18 ? "#6f7b5e" : h > 3 ? "#58803f" : "#4f8a3c";
+        c.fillRect(i * 10 * m, j * 10 * m, 10 * m + 1, 10 * m + 1);
+      }
+      c.fillStyle = "#555b62"; c.fillRect(px(-110), px(-110), 220 * m, 220 * m);               // город
+      c.strokeStyle = "#c4c9cf"; c.lineCap = "round";
+      DOROGI.forEach((L) => { c.lineWidth = 10 * m; c.beginPath(); c.moveTo(px(L), px(-105)); c.lineTo(px(L), px(105)); c.moveTo(px(-105), px(L)); c.lineTo(px(105), px(L)); c.stroke(); });
+      ZAGORODNYE.forEach(([tochki, sh]) => { c.strokeStyle = sh > 15 ? "#ffcc80" : "#c4c9cf"; c.lineWidth = Math.max(3, sh * m); c.beginPath(); tochki.forEach(([x, z], i) => (i ? c.lineTo(px(x), px(z)) : c.moveTo(px(x), px(z)))); c.stroke(); });
+      c.font = "bold 15px Arial"; c.textAlign = "center"; c.fillStyle = "#fff"; c.strokeStyle = "#000"; c.lineWidth = 3;
+      MESTA().forEach(([p, n]) => { c.strokeText(n, px(p.x), px(p.z) - 8); c.fillText(n, px(p.x), px(p.z) - 8); c.beginPath(); c.arc(px(p.x), px(p.z), 4, 0, 7); c.fill(); });
+      const ig = gdeIgrok(), a = s.vMashine ? s.vMashine.a : s.chel.a;
+      if (s.metka) { c.font = "28px Arial"; c.fillText("📍", px(s.metka.x), px(s.metka.z)); }
+      c.save(); c.translate(px(ig.x), px(ig.z)); c.rotate(a); c.fillStyle = "#ff1744";
+      c.beginPath(); c.moveTo(0, -12); c.lineTo(8, 8); c.lineTo(-8, 8); c.closePath(); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 2; c.stroke(); c.restore();
+    }
+    $("bolshayaKarta").addEventListener("pointerdown", (e) => {
+      const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 1000 - 500, z = (e.clientY - r.top) / r.height * 1000 - 500;
+      if (s.metka && Math.hypot(s.metka.x - x, s.metka.z - z) < 25) s.metka = null; else { s.metka = { x, z }; bip(900, 0.08, "sine", 0.08); }
+      risovatBolshuyuKartu();
+    });
+    function pokazatKartu() { if (!s || rezhim !== "gorod") return; $("kartaOkno").style.display = "flex"; risovatBolshuyuKartu(); }
+    $("knKarta").onclick = pokazatKartu;
+    addEventListener("keydown", (e) => { if (e.code === "KeyK" && !e.repeat) pokazatKartu(); });
     function pokazatMissii() {
       const o = $("missiiOkno"), sp = $("missiiSpisok");
       sp.innerHTML = "";
@@ -2667,6 +2826,7 @@
       kameraZa(ya.x, ya.z, ya.a, k);
       d.svetD.target.position.set(ya.x, 0, ya.z); d.svetD.position.set(ya.x + 30, 60, ya.z + 20);
       zvukMotora(Math.min(1, Math.hypot(ya.vx, ya.vz) / 0.9), igraIdet);
+      if (igraIdet) zapachkat(Math.hypot(ya.vx, ya.vz), k, 5);       // на земляной арене пачкаешься быстро
       hud(["🔧 " + Math.round(ya.hp) + "%", "🚗 На ходу: " + d.mashiny.filter((m) => m.hp > 0).length + "/7", "💀 Разбил: " + s.pobed]);
     }
 
@@ -2688,7 +2848,7 @@
           if (rezhim === "gonka") risovatGonku(kk); else if (rezhim === "parkovka") risovatParkovku(kk); else if (rezhim === "drift") risovatDrift(kk); else if (rezhim === "derbi") risovatDerbi(kk); else risovatGorod(kk);
           // 🟧 поворотники и 💡 фары у машины игрока
           const mojaM = rezhim === "gorod" ? (s && s.vMashine && s.vMashine.model) : igrok;
-          if (mojaM) { migatPovorotom(mojaM, povorotIgroka, seichas / 1000); primenitFary(mojaM); }
+          if (mojaM) { migatPovorotom(mojaM, povorotIgroka, seichas / 1000); primenitFary(mojaM); primenitGryaz(mojaM); }
           narisovat(render, KOMP.igra, scena, kamera);
         }
       }
@@ -2715,7 +2875,7 @@
     };
     addEventListener("appinstalled", () => { $("ustTekst").textContent = "✅ Установлено! Ищи иконку «Турбо Гараж» на экране."; });
     window.TEST = { start, klav, get s() { return s; }, get igraIdet() { return igraIdet; }, sohr, UROVNI,
-      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, vitrina, sozdatMashinu, smenitKameru, vesEkran, risovatGarazh, vysota, tach, VERSHINA, postavitPeredachu, get C3() { return C3; }, dobavitRozysk, poluchitUron, povredit, obnovitDerbi, vklPovorot };   // для проверки игры
+      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, vitrina, sozdatMashinu, smenitKameru, vesEkran, risovatGarazh, vysota, tach, VERSHINA, postavitPeredachu, get C3() { return C3; }, dobavitRozysk, poluchitUron, povredit, obnovitDerbi, vklPovorot, pokazatKartu };   // для проверки игры
   </script>
 </body>
 </html>
