@@ -1,0 +1,16 @@
+{
+  "name": "Турбо Гараж 3D — Мустафо",
+  "short_name": "Турбо Гараж",
+  "description": "3D игра с машинами: гонка, парковка, дрифт и большой мир с миссиями.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

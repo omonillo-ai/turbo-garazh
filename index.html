@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>🚗 Турбо Гараж 3D — Мустафо</title>
+  <!-- 📲 это делает сайт «приложением» (PWA): иконка на экране телефона, полный экран, работа без интернета -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Турбо Гараж">
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background: radial-gradient(#263238, #0d1117); color: #fff;
            display: flex; flex-direction: column; align-items: center; min-height: 100vh; user-select: none; }
@@ -30,6 +39,24 @@
     #vitrina { width: 100%; aspect-ratio: 2 / 1; border-radius: 12px; display: block; }
     #igra { display: none; flex-direction: column; align-items: center; width: 100%; }
     .malKn { padding: 6px 9px; font-size: 14px; }
+    /* 🎮 руль и педали */
+    #cpUpr { position: absolute; left: 0; right: 0; bottom: 0; display: none; justify-content: space-between; align-items: flex-end;
+             padding: 8px; pointer-events: none; user-select: none; -webkit-user-select: none; }
+    #cpUpr button, #rulBox { pointer-events: auto; touch-action: none; }
+    #rulBox { width: 128px; height: 128px; border-radius: 50%; background: rgba(0,0,0,.25); }
+    #rul { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
+    .cpLevo { display: flex; flex-direction: column; gap: 8px; margin: 0 auto 8px 8px; }
+    .cpMal { width: 48px; height: 48px; padding: 0; font-size: 22px; border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; border-color: rgba(255,255,255,.4); }
+    #cpPedali { display: flex; align-items: flex-end; gap: 8px; }
+    #korobka { display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,.45); padding: 4px; border-radius: 10px; }
+    #korobka button { width: 38px; height: 34px; padding: 0; font-size: 16px; background: transparent; color: #90a4ae; border-color: #455a64; }
+    #korobka button.vkl { background: #ffd54f; color: #111; border-color: #ffd54f; }
+    #pedTormoz, #pedGaz { color: #fff; font-size: 11px; letter-spacing: 1px; border-radius: 10px; border: 2px solid rgba(255,255,255,.5);
+      background: repeating-linear-gradient(0deg, #37474f 0 6px, #263238 6px 12px); }
+    #pedTormoz { width: 64px; height: 62px; }
+    #pedGaz { width: 50px; height: 104px; }
+    #pedTormoz.zhmu { background: #e53935; } #pedGaz.zhmu { background: #43a047; }
+    .cpMal.zhmu { background: #4fc3f7; }
     .tyun { display: flex; gap: 5px; flex-wrap: wrap; margin: 4px 0 10px; }
     .tyun button { padding: 6px 9px; font-size: 13px; }
     /* ⛶ весь экран: игра занимает всё окно, картинка растягивается */
@@ -59,7 +86,7 @@
     .uroven button { padding: 6px 12px; }
     #banner { position: absolute; left: 6%; right: 6%; top: 22%; text-align: center; font-size: 22px; font-weight: 900; padding: 12px;
               background: rgba(0,0,0,.55); border-radius: 14px; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .4s; pointer-events: none; }
-    #minikarta { position: absolute; right: 8px; bottom: 8px; width: 110px; height: 110px; border-radius: 12px; border: 2px solid rgba(255,255,255,.5); display: none; }
+    #minikarta { position: absolute; right: 8px; top: 44px; width: 110px; height: 110px; border-radius: 12px; border: 2px solid rgba(255,255,255,.5); display: none; }
     #missiiOkno { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; z-index: 6; }
     #missiiOkno .karta { background: #1c2733; max-width: 340px; width: 90%; }
     .pult2 { display: none; gap: 6px; width: 100%; max-width: 400px; margin: -6px 0 14px; }
@@ -101,6 +128,7 @@
       <div class="uroven" id="urovni"></div>
       <p class="malo" id="rekordy"></p>
       <p style="text-align:center;margin:6px 0 0"><button class="prozr" id="grafika"></button></p>
+      <p style="text-align:center;margin:6px 0 0"><button class="prozr" id="knUpravl"></button></p>
     </div>
 
     <div class="karta">
@@ -131,7 +159,12 @@
       <div class="cveta" id="cveta"></div>
       <p class="malo">Новый цвет стоит 50 🪙. Купленный цвет остаётся навсегда.</p>
     </div>
-    <p class="malo">Управление: стрелки или WASD, пробел — ручник. На телефоне — кнопки под экраном.<br>Для 3D нужен интернет (библиотека Three.js).</p>
+    <div class="karta" id="ustanovka" style="text-align:center">
+      <h2>📲 Приложение</h2>
+      <button id="knUstanovit" style="display:none">📲 Установить на телефон</button>
+      <p class="malo" id="ustTekst"></p>
+    </div>
+    <p class="malo">🎮 На телефоне: руль и педали на экране (как в Car Parking), D/R — вперёд/назад.<br>⌨️ На компьютере: стрелки или WASD, пробел — ручник, R — задняя передача, C — камера, F — весь экран, E — выйти из машины.<br>Для первого запуска нужен интернет.</p>
   </div>
 
   <!-- ===== ИГРА ===== -->
@@ -148,6 +181,28 @@
       <div id="hud"></div>
       <div id="banner"></div>
       <canvas id="minikarta" width="220" height="220"></canvas>
+      <!-- 🎮 руль и педали (как в Car Parking) -->
+      <div id="cpUpr">
+        <div id="rulBox">
+          <svg id="rul" viewBox="-60 -60 120 120">
+            <circle r="52" fill="none" stroke="#1b1f24" stroke-width="12"/>
+            <circle r="52" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-dasharray="6 10" opacity=".7"/>
+            <rect x="-6" y="-58" width="12" height="10" rx="3" fill="#ff5252"/>
+            <path d="M-46 4 L-14 6 L0 22 L14 6 L46 4" fill="none" stroke="#1b1f24" stroke-width="12" stroke-linejoin="round"/>
+            <circle r="15" fill="#263238" stroke="#4fc3f7" stroke-width="2"/>
+            <text y="5" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="Arial">TG</text>
+          </svg>
+        </div>
+        <div class="cpLevo">
+          <button id="cpSignal" class="cpMal">📯</button>
+          <button id="cpRuchnik" class="cpMal">✋</button>
+        </div>
+        <div id="cpPedali">
+          <div id="korobka"><button data-p="D" class="vkl">D</button><button data-p="R">R</button></div>
+          <button id="pedTormoz">ТОРМОЗ</button>
+          <button id="pedGaz">ГАЗ</button>
+        </div>
+      </div>
     </div>
     <div class="pult">
       <button data-k="left">◀</button>
@@ -156,7 +211,7 @@
       <button data-k="down">▼</button>
       <button data-k="up">▲</button>
     </div>
-    <div class="pult2" id="pult2">
+    <div class="pult2" id="pult2" style="margin-top:6px">
       <button id="knVyhod">🚪 Выйти</button>
       <button id="knMissii">📋 Миссии</button>
     </div>
@@ -519,12 +574,12 @@
       scena.add(s, s.target);
       return s;
     }
-    function derevo() {
+    function derevo(zima = false) {
       const g = new THREE.Group();
       const stvol = set(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 1.6, 8),
         new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 1 })), 0, 0.8, 0);
       const krona = set(new THREE.Mesh(new THREE.ConeGeometry(1.5 + Math.random() * 0.6, 3.6, 9),
-        new THREE.MeshStandardMaterial({ color: [0x2e7d32, 0x388e3c, 0x1b5e20][Math.floor(Math.random() * 3)], roughness: 0.9, flatShading: true })), 0, 3.2, 0);
+        new THREE.MeshStandardMaterial({ color: zima ? 0xe6efeb : [0x2e7d32, 0x388e3c, 0x1b5e20][Math.floor(Math.random() * 3)], roughness: 0.9, flatShading: true })), 0, 3.2, 0);
       stvol.castShadow = krona.castShadow = true;
       g.add(stvol, krona); return g;
     }
@@ -667,13 +722,64 @@
     function soobsh(t) { $("rekordy").textContent = t; setTimeout(risovatGarazh, 1500); }
 
     // ================= 5) УПРАВЛЕНИЕ =================
-    const klav = { left: false, right: false, up: false, down: false, hand: false };
+    // Управление собирается из двух источников: клавиатура (kb) и экранные руль/педали (tach).
+    // Каждый кадр они «смешиваются» в klav — его и читает физика.
+    const klav = { up: false, down: false, hand: false, tormoz: false, rul: 0 };
+    const kb = { left: false, right: false, up: false, down: false, hand: false };
+    const tach = { rul: 0, gaz: false, tormoz: false, hand: false };
+    let peredacha = "D";                                       // коробка передач: D — вперёд, R — назад
     const KNOPKI = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", ArrowUp: "up", KeyW: "up",
                      ArrowDown: "down", KeyS: "down", Space: "hand" };
-    addEventListener("keydown", (e) => { if (KNOPKI[e.code]) { klav[KNOPKI[e.code]] = true; e.preventDefault(); } });
-    addEventListener("keyup", (e) => { if (KNOPKI[e.code]) klav[KNOPKI[e.code]] = false; });
+    addEventListener("keydown", (e) => { if (KNOPKI[e.code]) { kb[KNOPKI[e.code]] = true; e.preventDefault(); } });
+    addEventListener("keyup", (e) => { if (KNOPKI[e.code]) kb[KNOPKI[e.code]] = false; });
+    function smeshatVvod() {
+      klav.up = kb.up || (tach.gaz && peredacha === "D");
+      klav.down = kb.down || (tach.gaz && peredacha === "R");
+      klav.tormoz = tach.tormoz;
+      klav.hand = kb.hand || tach.hand;
+      klav.rul = Math.max(-1, Math.min(1, (kb.right ? 1 : 0) - (kb.left ? 1 : 0) + tach.rul));
+    }
+    // 🎮 РУЛЬ И ПЕДАЛИ (как в Car Parking): крутишь руль пальцем, жмёшь газ/тормоз, выбираешь D или R
+    let rulUgol = 0, rulDerzhim = false, rulPred = 0;
+    const rulEl = $("rul"), rulBox = $("rulBox");
+    const ugolPal = (e) => { const r = rulBox.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
+    rulBox.addEventListener("pointerdown", (e) => { e.preventDefault(); rulDerzhim = true; rulPred = ugolPal(e); rulBox.setPointerCapture(e.pointerId); });
+    rulBox.addEventListener("pointermove", (e) => {
+      if (!rulDerzhim) return;
+      const u = ugolPal(e); let d = u - rulPred; if (d > 180) d -= 360; if (d < -180) d += 360;
+      rulPred = u; rulUgol = Math.max(-270, Math.min(270, rulUgol + d));
+    });
+    const rulOtpustit = () => (rulDerzhim = false);
+    rulBox.addEventListener("pointerup", rulOtpustit); rulBox.addEventListener("pointercancel", rulOtpustit);
+    function obnovitRul() {                                    // руль сам возвращается в центр, когда отпустил
+      if (!rulDerzhim) rulUgol *= 0.8;
+      tach.rul = Math.max(-1, Math.min(1, rulUgol / 200));
+      rulEl.style.transform = "rotate(" + rulUgol + "deg)";
+    }
+    const pedal = (id, kl) => {
+      const el = $(id), vkl = (zn) => (e) => { e.preventDefault(); tach[kl] = zn; el.classList.toggle("zhmu", zn); };
+      el.addEventListener("pointerdown", vkl(true)); el.addEventListener("pointerup", vkl(false));
+      el.addEventListener("pointerleave", vkl(false)); el.addEventListener("pointercancel", vkl(false));
+    };
+    pedal("pedGaz", "gaz"); pedal("pedTormoz", "tormoz"); pedal("cpRuchnik", "hand");
+    function postavitPeredachu(p) {
+      peredacha = p;
+      document.querySelectorAll("#korobka button").forEach((b) => b.classList.toggle("vkl", b.dataset.p === p));
+    }
+    document.querySelectorAll("#korobka button").forEach((b) => (b.onclick = () => { postavitPeredachu(b.dataset.p); bip(b.dataset.p === "R" ? 300 : 500, 0.06, "square", 0.05); }));
+    addEventListener("keydown", (e) => { if (e.code === "KeyR" && !e.repeat) postavitPeredachu(peredacha === "D" ? "R" : "D"); });
+    $("cpSignal").onclick = () => { bip(415, 0.35, "square", 0.12); bip(330, 0.35, "square", 0.1); };   // 📯 сигнал «би-бип»
+    // какое управление показывать: руль+педали или старые кнопки-стрелки
+    function pokazatUpravlenie() {
+      const cp = sohr.upravl !== "knopki";
+      $("cpUpr").style.display = cp && s ? "flex" : "none";
+      document.querySelector(".pult").style.display = cp ? "none" : "flex";
+      $("cpPedali").style.visibility = rezhim === "gonka" ? "hidden" : "visible";   // в гонке газ сам
+      $("knUpravl").textContent = cp ? "🎮 Управление: РУЛЬ И ПЕДАЛИ (как Car Parking)" : "🎮 Управление: кнопки-стрелки";
+    }
+    $("knUpravl").onclick = () => { sohr.upravl = sohr.upravl === "knopki" ? "cp" : "knopki"; sohranit(); pokazatUpravlenie(); };
     document.querySelectorAll(".pult button").forEach((b) => {
-      const vkl = (zn) => (e) => { e.preventDefault(); klav[b.dataset.k] = zn; b.classList.toggle("zhmu", zn); };
+      const vkl = (zn) => (e) => { e.preventDefault(); kb[b.dataset.k] = zn; b.classList.toggle("zhmu", zn); };
       b.addEventListener("pointerdown", vkl(true)); b.addEventListener("pointerup", vkl(false));
       b.addEventListener("pointerleave", vkl(false)); b.addEventListener("pointercancel", vkl(false));
     });
@@ -681,15 +787,15 @@
     let vidKamery = Number(sohr.kamera) || 0;
     const VIDY = ["🎥 Сзади", "🎥 Близко", "🎥 Из кабины", "🎥 Сверху"];
     const vKam = new THREE.Vector3();
-    function kameraZa(x, z, a, k, peshkom = false) {
+    function kameraZa(x, z, a, k, peshkom = false, y0 = 0) {
       const fx = Math.sin(a), fz = -Math.cos(a);
       let p, c, l;
       if (vidKamery === 0) { p = peshkom ? [x - fx * 6, 3, z - fz * 6] : [x - fx * 11, 5, z - fz * 11]; c = [x + fx * 4, peshkom ? 1.5 : 1, z + fz * 4]; l = 0.08; }
       else if (vidKamery === 1) { p = peshkom ? [x - fx * 3.2, 2.1, z - fz * 3.2] : [x - fx * 6.5, 2.6, z - fz * 6.5]; c = [x + fx * 6, peshkom ? 1.6 : 1, z + fz * 6]; l = 0.15; }
       else if (vidKamery === 2) { p = peshkom ? [x + fx * 0.3, 1.8, z + fz * 0.3] : [x + fx * 0.6, 1.28, z + fz * 0.6]; c = [x + fx * 20, peshkom ? 1.7 : 1.1, z + fz * 20]; l = 1; }
       else { p = [x - fx * 6, 26, z - fz * 6]; c = [x + fx * 3, 0, z + fz * 3]; l = 0.1; }
-      kamera.position.lerp(vKam.set(p[0], p[1], p[2]), Math.min(1, l * Math.max(k, 0.5)));
-      kamera.lookAt(c[0], c[1], c[2]);
+      kamera.position.lerp(vKam.set(p[0], p[1] + y0, p[2]), Math.min(1, l * Math.max(k, 0.5)));
+      kamera.lookAt(c[0], c[1] + y0, c[2]);
     }
     function smenitKameru() {
       if (!s) return;
@@ -719,7 +825,7 @@
       if (e.code === "KeyC" && !e.repeat) smenitKameru();
       if (e.code === "KeyF" && !e.repeat && s) vesEkran(!document.body.classList.contains("polnyi"));
     });
-    const rulKlav = () => (klav.right ? 1 : 0) - (klav.left ? 1 : 0);
+    const rulKlav = () => klav.rul;
 
     // ================= 6) ОБЩЕЕ ДЛЯ ИГРЫ =================
     let rezhim = null, igraIdet = false, s = null, zarabotano = 0;
@@ -738,7 +844,9 @@
       $("knRuchnik").innerHTML = "✋<br>ручник";
       $("pult2").style.display = "none"; $("minikarta").style.display = r === "gorod" || r === "drift" ? "block" : "none";
       $("banner").style.opacity = 0;
+      postavitPeredachu("D");
       s = r === "gonka" ? novayaGonka() : r === "parkovka" ? novayaParkovka() : r === "drift" ? novyiDrift() : novyiGorod();
+      pokazatUpravlenie();
       igraIdet = true;
     }
     function konec(zag, tekst, pobeda, dalee = false) {
@@ -758,8 +866,17 @@
       $("igra").style.display = "none"; $("garazh").style.display = "block"; risovatGarazh();
     };
     document.querySelectorAll("[data-rezhim]").forEach((b) => {
-      b.onclick = () => (b.dataset.rezhim === "parkovka" ? pokazatUrovni() : start(b.dataset.rezhim));
+      b.onclick = () => (b.dataset.rezhim === "parkovka" ? pokazatUrovni() : b.dataset.rezhim === "gorod" ? pokazatKarty() : start(b.dataset.rezhim));
     });
+    // 🗺️ выбор карты для Города: лето/зима и где начать — в городе или у гор
+    function pokazatKarty() {
+      $("urovni").innerHTML = "<span style='width:100%;text-align:center'>🗺️ Выбери карту (мир 1000×1000 м):</span>";
+      [["leto", "gorod", "☀️ Город · лето"], ["zima", "gorod", "❄️ Город · зима"], ["leto", "gory", "⛰️ Горы · лето"], ["zima", "gory", "🏔️ Горы · зима"]].forEach(([sezon, mesto, nazv]) => {
+        const b = document.createElement("button"); b.textContent = nazv;
+        b.onclick = () => { sohr.karta = { sezon, mesto }; sohranit(); $("urovni").innerHTML = "⏳ Строю мир..."; setTimeout(() => start("gorod"), 30); };
+        $("urovni").appendChild(b);
+      });
+    }
     function pokazatUrovni() {
       $("urovni").innerHTML = "<span style='width:100%;text-align:center'>🅿️ Выбери уровень:</span>";
       UROVNI.forEach((_, i) => {
@@ -852,8 +969,7 @@
       g.tik += k;
       g.skor += 0.004 * k;
       const upr = 3 + EU() * 0.8;
-      if (klav.left) g.x -= upr * k;
-      if (klav.right) g.x += upr * k;
+      g.x += upr * klav.rul * k;
       g.x = Math.max(70, Math.min(330, g.x));
       g.put += g.skor * k / 10;
       g.sdvig = (g.sdvig + g.skor * k) % 80;
@@ -1043,8 +1159,8 @@
       if (klav.up) m.v += 0.05 * k; else if (klav.down) m.v -= 0.05 * k; else m.v *= Math.pow(0.94, k);
       m.v = Math.max(-maxV * 0.7, Math.min(maxV, m.v));
       const povorot = (0.035 + EU() * 0.004) * k * Math.min(1, Math.abs(m.v) / 1.2) * Math.sign(m.v);
-      if (klav.left) m.a -= povorot;
-      if (klav.right) m.a += povorot;
+      m.a += povorot * klav.rul;
+      if (klav.tormoz) m.v *= Math.pow(0.85, k);                 // педаль тормоза
       m.x += Math.sin(m.a) * m.v * k; m.y -= Math.cos(m.a) * m.v * k;
       if (udarilas(m, u.prep)) { zvukUdar(); return konec("GAME OVER", "💥 Бах! Ты задел препятствие.", false); }
       const fx = Math.sin(m.a), fy = -Math.cos(m.a), rx = Math.cos(m.a), ry = Math.sin(m.a);
@@ -1174,8 +1290,8 @@
       vperyod *= Math.pow(0.988, k);
       vbok *= Math.pow(klav.hand ? 0.985 : 0.9 - EU() * 0.01, k);   // ручник = колёса меньше держат → занос
       const rul = (0.045 + EU() * 0.004) * Math.min(1, Math.abs(vperyod) / 3) * Math.sign(vperyod) * k;
-      if (klav.left) m.a -= rul;
-      if (klav.right) m.a += rul;
+      m.a += rul * klav.rul;
+      if (klav.tormoz) { vperyod *= Math.pow(0.92, k); }
       m.vx = fx * vperyod + rx * vbok; m.vy = fy * vperyod + ry * vbok;
       const px = m.x, py = m.y;
       m.x += m.vx * k; m.y += m.vy * k;
@@ -1241,8 +1357,166 @@
     // ================= 11) РЕЖИМ «ГОРОД» — открытый мир, миссии, можно выйти из машины =================
     // Здесь всё считаем сразу в метрах 3D-мира (не в пикселях). Город 200×200 м, дороги — сетка.
     const DOROGI = [-100, -60, -20, 20, 60, 100];          // линии дорог по X и по Z (ширина дороги 10 м)
-    const GRANICA = 104;
     let C3 = null;
+    const MIRY = {};                                         // миры по сезонам: лето и зима строятся по одному разу
+    // ======== БОЛЬШОЙ МИР: 1000×1000 м (в 25 раз больше старого города) ========
+    // В центре город, вокруг — равнина с кольцевой дорогой и деревнями, по краям — ГОРЫ.
+    const MIR = 495;                                           // край мира
+    const ROVNO = 330;                                         // до этого расстояния земля ровная
+    const gladko = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    // высота земли в точке (x, z): формула из синусов — получаются холмы и горы
+    function vysota(x, z) {
+      const d = Math.max(Math.abs(x), Math.abs(z));
+      if (d < ROVNO) return 0;
+      const holmy = 14 + 10 * Math.sin(x * 0.021) + 8 * Math.cos(z * 0.017) + 6 * Math.sin((x + z) * 0.033) + 4 * Math.cos(x * 0.05 - z * 0.04);
+      const sever = 1 + 0.9 * Math.max(0, -z) / 500;            // на севере горы выше
+      return gladko(ROVNO, ROVNO + 90, d) * Math.max(2, holmy) * sever + gladko(440, 500, d) * 40;
+    }
+    function naitiVershinu() {                                 // самая высокая точка на севере — туда миссия
+      let best = [0, -450, 0];
+      for (let x = -200; x <= 200; x += 8) for (let z = -480; z <= -360; z += 8) { const h = vysota(x, z); if (h > best[2] && Math.abs(x) < 470) best = [x, z, h]; }
+      return best;
+    }
+    const VERSHINA = naitiVershinu();
+    const DEREVNI = [[180, -180, "🏡 Деревня Восток"], [-200, 190, "🏡 Деревня Запад"], [190, 190, "🏡 Деревня Юг"]];
+    // дороги вне города: [точки], ширина
+    const ZAGORODNYE = [
+      [[[-306, -300], [306, -300]], 12], [[[-306, 300], [306, 300]], 12], [[[-300, -306], [-300, 306]], 12], [[[300, -306], [300, 306]], 12],  // кольцо
+      [[[-20, -104], [-20, -300]], 10], [[[-20, 104], [-20, 300]], 10], [[[104, 20], [300, 20]], 10], [[[-104, 20], [-300, 20]], 10],          // лучи
+      [Array.from({ length: 40 }, (_, i) => { const z = -300 - i * 4.3; return [-20 + 40 * Math.sin((z + 300) / 22) * gladko(-300, -330, z), z]; }), 9] // серпантин в горы
+    ];
+
+    // лента дороги, которая лежит на земле (повторяет холмы)
+    function lentaDorogi(tochki, shir, mat) {
+      const pts = [];
+      for (let i = 0; i < tochki.length - 1; i++) {             // нарезаем на кусочки по 3 м
+        const [x1, z1] = tochki[i], [x2, z2] = tochki[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, z2 - z1) / 3));
+        for (let j = 0; j < n; j++) pts.push([x1 + (x2 - x1) * j / n, z1 + (z2 - z1) * j / n]);
+      }
+      pts.push(tochki[tochki.length - 1]);
+      const poz = [], uv = [], ind = []; let dlina = 0;
+      pts.forEach(([x, z], i) => {
+        const [ax, az] = pts[Math.max(0, i - 1)], [bx, bz] = pts[Math.min(pts.length - 1, i + 1)];
+        let nx = -(bz - az), nz = bx - ax; const L = Math.hypot(nx, nz) || 1; nx /= L; nz /= L;
+        if (i > 0) dlina += Math.hypot(x - pts[i - 1][0], z - pts[i - 1][1]);
+        [-1, 1].forEach((s) => {
+          const px = x + nx * s * shir / 2, pz = z + nz * s * shir / 2;
+          poz.push(px, Math.max(vysota(px, pz), vysota(x, z)) + 0.06, pz); uv.push(s < 0 ? 0 : 1, dlina / 8);
+        });
+        if (i > 0) { const a = (i - 1) * 2; ind.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(poz, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(ind); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; return m;
+    }
+
+    function postroitOkrestnosti(sc, zima, steny) {
+      // ---- земля с горами (сетка 250×250, высота у каждой точки своя) ----
+      const zg = new THREE.PlaneGeometry(MIR * 2 + 10, MIR * 2 + 10, 250, 250).rotateX(-Math.PI / 2);
+      const pos = zg.attributes.position, cveta = [], c = new THREE.Color();
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = pos.getZ(i), h = vysota(x, z);
+        pos.setY(i, h - 0.06);
+        const krut = Math.hypot(vysota(x + 2, z) - h, vysota(x, z + 2) - h) / 2;   // крутизна склона
+        if (zima) c.set(krut > 0.6 ? 0x80878e : 0xd9e0e6);
+        else if (h > 38) c.set(0xdde3e8);                          // снег на вершинах
+        else if (krut > 0.55) c.set(0x7d7469);                     // скалы
+        else c.set(h > 8 ? 0x5e8f3e : 0x5a9a44);                   // трава
+        cveta.push(c.r, c.g, c.b);
+      }
+      zg.setAttribute("color", new THREE.Float32BufferAttribute(cveta, 3)); zg.computeVertexNormals();
+      const shumTex = tekstura(128, 128, (cx, w, h) => { cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); shum(cx, w, h, 2500, ["#e6e6e6", "#d0d0d0", "#f4f4f4"]); }, [160, 160]);
+      const zemlya = new THREE.Mesh(zg, new THREE.MeshStandardMaterial({ vertexColors: true, map: shumTex, roughness: 0.95 }));
+      zemlya.receiveShadow = true; sc.add(zemlya);
+
+      // ---- загородные дороги ----
+      const dorTex = tekstura(64, 128, (cx, w, h) => {
+        cx.fillStyle = zima ? "#5b6066" : "#3a3d42"; cx.fillRect(0, 0, w, h); shum(cx, w, h, 300, ["#45484e", "#303338"]);
+        cx.fillStyle = zima ? "#e8eef3" : "#ddd"; cx.fillRect(1, 0, 3, h); cx.fillRect(w - 4, 0, 3, h);
+        cx.fillStyle = "#ffd600"; cx.fillRect(w / 2 - 1.5, 0, 3, h / 2);
+      });
+      dorTex.wrapT = THREE.RepeatWrapping;
+      const dorMat = new THREE.MeshStandardMaterial({ map: dorTex, roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+      ZAGORODNYE.forEach(([tochki, shir]) => sc.add(lentaDorogi(tochki, shir, dorMat)));
+
+      // ---- деревни: домики с крышами ----
+      const krysha = new THREE.MeshStandardMaterial({ color: zima ? 0xf2f5f8 : 0xa1452f, roughness: 0.8, flatShading: true });
+      const steniMat = [0xf3e5c0, 0xd7ccc8, 0xc8e6c9, 0xbbdefb, 0xffe0b2].map((cv) => new THREE.MeshStandardMaterial({ color: cv, roughness: 0.9 }));
+      const dverMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 }), oknoMat = new THREE.MeshStandardMaterial({ color: 0x223, emissive: 0xffc46b, emissiveIntensity: 0.8 });
+      DEREVNI.forEach(([vx, vz]) => {
+        for (let i = 0; i < 8; i++) {
+          const u = (i / 8) * Math.PI * 2, x = vx + Math.cos(u) * 24, z = vz + Math.sin(u) * 24;
+          const dom = new THREE.Group();
+          const st = new THREE.Mesh(new THREE.BoxGeometry(6, 3.4, 7), steniMat[i % 5]); st.position.y = 1.7; st.castShadow = st.receiveShadow = true;
+          const kr = new THREE.Mesh(new THREE.ConeGeometry(5.3, 2.6, 4).rotateY(Math.PI / 4).scale(1, 1, 1.2), krysha); kr.position.y = 4.7; kr.castShadow = true;
+          const dv = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.1, 0.1), dverMat); dv.position.set(0, 1.05, 3.52);
+          const ok = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 0.1), oknoMat); ok.position.set(1.8, 2, 3.52);
+          dom.add(st, kr, dv, ok);
+          dom.position.set(x, vysota(x, z), z); dom.rotation.y = -u - Math.PI / 2;      // дверью к центру деревни
+          sc.add(dom);
+          steny.push({ x: x - 4, z: z - 4, w: 8, d: 8 });
+        }
+        const kolodec = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 1, 16), new THREE.MeshStandardMaterial({ color: 0x8d8d8d, roughness: 1 }));
+        kolodec.position.set(vx + 8, 0.5, vz + 8); kolodec.castShadow = true; sc.add(kolodec);
+        steny.push({ x: vx + 6.7, z: vz + 6.7, w: 2.6, d: 2.6 });
+      });
+
+      // ---- лес: 900 деревьев одной «пачкой» (InstancedMesh) ----
+      const naDoroge = (x, z) => ZAGORODNYE.some(([t, sh]) => t.some(([px, pz], i) => i < t.length - 1 &&
+        otrezok(x, z, px, pz, t[i + 1][0], t[i + 1][1]) < sh / 2 + 5));
+      const stvoly = [], mt = new THREE.Matrix4(), q = new THREE.Quaternion(), sv = new THREE.Vector3(), pv = new THREE.Vector3();
+      for (let tr = 0; tr < 2600 && stvoly.length < 900; tr++) {
+        const x = (sluch() - 0.5) * 960, z = (sluch() - 0.5) * 960, d = Math.max(Math.abs(x), Math.abs(z)), h = vysota(x, z);
+        if (d < 118 || h > 34 || naDoroge(x, z) || DEREVNI.some(([vx, vz]) => Math.hypot(x - vx, z - vz) < 36)) continue;
+        if (Math.hypot(x - VERSHINA[0], z - VERSHINA[1]) < 12) continue;
+        stvoly.push([x, h, z, 0.8 + sluch() * 0.7]);
+      }
+      const stvolIM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.35, 1.6, 6).translate(0, 0.8, 0), new THREE.MeshStandardMaterial({ color: 0x5d4037 }), stvoly.length);
+      const kronaIM = new THREE.InstancedMesh(new THREE.ConeGeometry(1.7, 4, 7).translate(0, 3.4, 0), new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }), stvoly.length);
+      stvoly.forEach(([x, h, z, m], i) => {
+        mt.compose(pv.set(x, h, z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), sluch() * 6), sv.set(m, m, m));
+        stvolIM.setMatrixAt(i, mt); kronaIM.setMatrixAt(i, mt);
+        kronaIM.setColorAt(i, c.set(zima ? [0xe9f1ee, 0xdbe8e2, 0xf5f8f7][i % 3] : [0x2e7d32, 0x388e3c, 0x1b5e20, 0x43a047][i % 4]));
+        steny.push({ x: x - 0.5, z: z - 0.5, w: 1, d: 1 });
+      });
+      stvolIM.castShadow = kronaIM.castShadow = true;
+      sc.add(stvolIM, kronaIM);
+
+      // ---- флаг на вершине горы ----
+      const [fx, fz, fh] = VERSHINA;
+      const drevko = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6, 8), MAT.hrom); drevko.position.set(fx, fh + 3, fz);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), new THREE.MeshStandardMaterial({ color: 0xe53935, side: THREE.DoubleSide, emissive: 0x400000 }));
+      flag.position.set(fx + 1.2, fh + 5.2, fz); sc.add(drevko, flag);
+    }
+    // расстояние от точки до отрезка (нужно, чтобы деревья не росли на дороге)
+    function otrezok(x, z, x1, z1, x2, z2) {
+      const dx = x2 - x1, dz = z2 - z1, L = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / L));
+      return Math.hypot(x - (x1 + dx * t), z - (z1 + dz * t));
+    }
+    // сетка для быстрых столкновений: делим мир на клетки 16×16 м и помним, что в какой клетке стоит
+    function sdelatSetku(steny) {
+      const S = new Map();
+      steny.forEach((p) => {
+        for (let i = Math.floor(p.x / 16); i <= Math.floor((p.x + p.w) / 16); i++)
+          for (let j = Math.floor(p.z / 16); j <= Math.floor((p.z + p.d) / 16); j++) {
+            const k = i + "," + j; if (!S.has(k)) S.set(k, []); S.get(k).push(p);
+          }
+      });
+      return S;
+    }
+    // снегопад: 3000 снежинок в коробке вокруг камеры
+    function sdelatSneg(sc) {
+      const n = 3000, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { pos[i * 3] = (Math.random() - 0.5) * 120; pos[i * 3 + 1] = Math.random() * 50; pos[i * 3 + 2] = (Math.random() - 0.5) * 120; }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const tex = tekstura(32, 32, (c) => { const gr = c.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = gr; c.fillRect(0, 0, 32, 32); });
+      const p = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.35, map: tex, transparent: true, depthWrite: false, color: 0xffffff }));
+      p.frustumCulled = false; sc.add(p); return p;
+    }
+
+
     // «случайные» числа, которые каждый раз одинаковые — город всегда строится одинаково
     let zerno = 7; const sluch = () => ((zerno = (zerno * 16807) % 2147483647) / 2147483647);
 
@@ -1317,32 +1591,34 @@
       return g;
     }
 
-    function mirGoroda() {
-      if (C3) return C3;
+    function mirGoroda(sezon = "leto") {
+      if (MIRY[sezon]) return MIRY[sezon];
       zerno = 7;
+      const zima = sezon === "zima";
       const sc = new THREE.Scene();
-      sc.fog = new THREE.Fog(0xe9b98f, 120, 330);
+      sc.fog = zima ? new THREE.Fog(0xdfe7ee, 50, 280) : new THREE.Fog(0xe9b98f, 160, 560);
       // небо с закатом (Sky) — и его же отражают машины
       const nebo = new Sky(); nebo.scale.setScalar(900);
       const solnceNapr = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(82), THREE.MathUtils.degToRad(210));
       Object.assign(nebo.material.uniforms.turbidity, { value: 6 }); nebo.material.uniforms.rayleigh.value = 2.2;
       nebo.material.uniforms.mieCoefficient.value = 0.006; nebo.material.uniforms.mieDirectionalG.value = 0.85;
       nebo.material.uniforms.sunPosition.value.copy(solnceNapr);
-      sc.add(nebo);
+      if (zima) sc.background = tekstura(4, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, "#8fa3b8"); g.addColorStop(1, "#e3eaf0"); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+      else sc.add(nebo);
       sc.environment = render.env;
-      sc.add(new THREE.HemisphereLight(0xffd8b0, 0x40506a, 0.45));
-      const solnce = new THREE.DirectionalLight(0xffc48a, 2.0);
+      sc.add(new THREE.HemisphereLight(zima ? 0xdde8f5 : 0xffd8b0, zima ? 0x6f7f90 : 0x40506a, zima ? 0.45 : 0.45));
+      const solnce = new THREE.DirectionalLight(zima ? 0xe8f0ff : 0xffc48a, zima ? 0.95 : 2.0);
       solnce.castShadow = true; solnce.shadow.mapSize.set(2048, 2048); solnce.shadow.bias = -0.0004;
       Object.assign(solnce.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 300 });
       sc.add(solnce, solnce.target);
 
       // земля: асфальт внутри города, трава снаружи
-      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = "#3a3d42"; c.fillRect(0, 0, w, h); shum(c, w, h, 3500, ["#44474d", "#303338", "#4d5056"]); }, [40, 40]);
+      const asfaltTex = tekstura(256, 256, (c, w, h) => { c.fillStyle = zima ? "#565b61" : "#3a3d42"; c.fillRect(0, 0, w, h); shum(c, w, h, 3500, ["#44474d", "#303338", "#4d5056"]); }, [40, 40]);
       const asfalt = new THREE.Mesh(new THREE.PlaneGeometry(220, 220).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: asfaltTex, roughness: 0.8 }));
       asfalt.receiveShadow = true; sc.add(asfalt);
-      const travaTex = tekstura(128, 128, (c, w, h) => { c.fillStyle = "#4f8a3c"; c.fillRect(0, 0, w, h); shum(c, w, h, 1500, ["#5c9c46", "#437a33", "#6aa851"]); }, [80, 80]);
-      const zemlya = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: travaTex, roughness: 1 }));
-      zemlya.position.y = -0.03; zemlya.receiveShadow = true; sc.add(zemlya);
+      const travaTex = zima ? tekstura(128, 128, (c, w, h) => { c.fillStyle = "#eef3f7"; c.fillRect(0, 0, w, h); shum(c, w, h, 1500, ["#ffffff", "#dde6ee"]); }, [80, 80])
+        : tekstura(128, 128, (c, w, h) => { c.fillStyle = "#4f8a3c"; c.fillRect(0, 0, w, h); shum(c, w, h, 1500, ["#5c9c46", "#437a33", "#6aa851"]); }, [80, 80]);
 
       // разметка: жёлтые штрихи по центру каждой дороги (одна «пачка» — InstancedMesh)
       const shtrih = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.3, 2.2).rotateX(-Math.PI / 2),
@@ -1358,8 +1634,8 @@
 
       const stenyDomov = [];                                    // прямоугольники, через которые нельзя проехать
       const stili = [fasad("#d7c3a3", "#5b6e7c"), fasad("#8fa3b5", "#2f3e4c"), fasad("#b05a43", "#3d4b55"), fasad("#5d8fb8", "#1e3446"), fasad("#e8e4da", "#58636b")];
-      const krysha = new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.9 });
-      const trotuar = new THREE.MeshStandardMaterial({ color: 0xb9b5ad, roughness: 0.95 });
+      const krysha = new THREE.MeshStandardMaterial({ color: zima ? 0xf4f7fa : 0x4a4e55, roughness: 0.9 });
+      const trotuar = new THREE.MeshStandardMaterial({ color: zima ? 0xe8edf1 : 0xb9b5ad, roughness: 0.95 });
       const parki = [[0, 4], [2, 2]];                          // в этих кварталах — парки
       for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
         const cx = -80 + i * 40, cz = -80 + j * 40;
@@ -1368,7 +1644,7 @@
         if (parki.some(([a, b]) => a === i && b === j)) {
           const gazon = new THREE.Mesh(new THREE.PlaneGeometry(27, 27).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: travaTex, roughness: 1 }));
           gazon.position.set(cx, 0.32, cz); gazon.receiveShadow = true; sc.add(gazon);
-          for (let t = 0; t < 9; t++) { const d = derevo(); d.position.set(cx - 11 + sluch() * 22, 0.3, cz - 11 + sluch() * 22); sc.add(d); }
+          for (let t = 0; t < 9; t++) { const d = derevo(zima); d.position.set(cx - 11 + sluch() * 22, 0.3, cz - 11 + sluch() * 22); sc.add(d); }
           if (i === 2) {                                        // фонтан в центре города
             const f = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.3, 0.8, 32), trotuar); f.position.set(cx, 0.7, cz); f.castShadow = true; sc.add(f);
             const voda = new THREE.Mesh(new THREE.CircleGeometry(2.7, 32).rotateX(-Math.PI / 2),
@@ -1380,7 +1656,7 @@
         }
         // 4 участка в квартале: на каждом дом (или дерево)
         [[-7.5, -7.5], [7.5, -7.5], [-7.5, 7.5], [7.5, 7.5]].forEach(([dx, dz]) => {
-          if (sluch() < 0.12) { const d = derevo(); d.position.set(cx + dx, 0.3, cz + dz); sc.add(d); return; }
+          if (sluch() < 0.12) { const d = derevo(zima); d.position.set(cx + dx, 0.3, cz + dz); sc.add(d); return; }
           const w = 10 + sluch() * 3, d = 10 + sluch() * 3;
           const blizko = 1 - Math.hypot(cx, cz) / 140;          // ближе к центру — дома выше
           const h = 6 + sluch() * 14 + blizko * 26 * sluch();
@@ -1398,11 +1674,10 @@
       for (let i = 0; i < 5; i++) for (let j = 0; j < 6; j++) {
         const f = fonar(0xffd59a); f.position.set(-80 + i * 40, 0.3, DOROGI[j] + (j < 5 ? 5.6 : -5.6)); f.rotation.y = j < 5 ? Math.PI / 2 : -Math.PI / 2; sc.add(f);
       }
-      // стена по краю города
-      const ograda = new THREE.MeshStandardMaterial({ map: polosatyiTex(), roughness: 0.7 });
-      [[0, -GRANICA - 1, 212, 2], [0, GRANICA + 1, 212, 2], [-GRANICA - 1, 0, 2, 212], [GRANICA + 1, 0, 2, 212]].forEach(([x, z, w, d]) => {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(w, 1.4, d), ograda); b.position.set(x, 0.7, z); b.castShadow = true; sc.add(b);
-      });
+      // за городом: горы, кольцевая дорога, деревни, лес
+      postroitOkrestnosti(sc, zima, stenyDomov);
+      const setka = sdelatSetku(stenyDomov);
+      const sneg = zima ? sdelatSneg(sc) : null;
 
       // машины в городе: твоя + припаркованные. В любую можно сесть!
       const mashiny = [];
@@ -1422,17 +1697,24 @@
       const monetaGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.12, 24).rotateX(Math.PI / 2);
       const monetaMat = new THREE.MeshStandardMaterial({ color: 0xffc107, metalness: 1, roughness: 0.2, emissive: 0x8a5a00 });
       const monety = []; for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(monetaGeo, monetaMat); m.visible = false; m.castShadow = true; sc.add(m); monety.push(m); }
-      C3 = { sc, solnce, solnceNapr, stenyDomov, mashiny, chelovek, passazhir, mayak, strelka, monety };
-      return C3;
+      const mir = { sc, solnce, solnceNapr, stenyDomov, setka, sneg, zima, mashiny, chelovek, passazhir, mayak, strelka, monety };
+      mashiny.forEach((m) => (m.model.rotation.order = "YXZ"));          // чтобы машина могла наклоняться на склонах
+      MIRY[sezon] = mir;
+      return mir;
     }
 
     // ---------- столкновения в городе ----------
     function vStene(x, z, r) {
-      if (Math.abs(x) > GRANICA - r || Math.abs(z) > GRANICA - r) return true;
-      return C3.stenyDomov.some((p) => {
-        const bx = Math.max(p.x, Math.min(x, p.x + p.w)), bz = Math.max(p.z, Math.min(z, p.z + p.d));
-        return (x - bx) ** 2 + (z - bz) ** 2 < r * r;
-      });
+      if (Math.abs(x) > MIR - r || Math.abs(z) > MIR - r) return true;
+      for (let i = Math.floor((x - r) / 16); i <= Math.floor((x + r) / 16); i++)
+        for (let j = Math.floor((z - r) / 16); j <= Math.floor((z + r) / 16); j++) {
+          const sp = C3.setka.get(i + "," + j); if (!sp) continue;
+          for (const p of sp) {
+            const bx = Math.max(p.x, Math.min(x, p.x + p.w)), bz = Math.max(p.z, Math.min(z, p.z + p.d));
+            if ((x - bx) ** 2 + (z - bz) ** 2 < r * r) return true;
+          }
+        }
+      return false;
     }
     const mashinaUdarilas = (m) => [-1.5, 0, 1.5].some((d) => vStene(m.x + Math.sin(m.a) * d, m.z - Math.cos(m.a) * d, 1.15));
 
@@ -1440,16 +1722,18 @@
     function ehatMashina(m, k, upravlyayu) {
       const fx = Math.sin(m.a), fz = -Math.cos(m.a), rx = Math.cos(m.a), rz = Math.sin(m.a);
       let vp = m.vx * fx + m.vz * fz, vb = m.vx * rx + m.vz * rz;
-      const gaz = 0.011 + ES() * 0.0016;
+      const gaz = (0.011 + ES() * 0.0016) * (C3.zima ? 0.8 : 1);
+      const uklon = (vysota(m.x + fx * 2, m.z + fz * 2) - vysota(m.x - fx * 2, m.z - fz * 2)) / 4;   // в горку тяжело, с горки — разгон
+      vp -= uklon * 0.012 * k; m.uklon = uklon;
       if (upravlyayu && klav.up) vp += gaz * k;
       if (upravlyayu && klav.down) vp -= (vp > 0 ? gaz * 2.2 : gaz * 0.8) * k;
       vp *= Math.pow(upravlyayu && (klav.up || klav.down) ? 0.986 : 0.97, k);
       vp = Math.max(-0.3, vp);
-      vb *= Math.pow(upravlyayu && klav.hand ? 0.975 : 0.82, k);
+      vb *= Math.pow(upravlyayu && klav.hand ? 0.975 : C3.zima ? 0.93 : 0.82, k);   // зимой скользко!
       if (upravlyayu) {
         const rul = (0.034 + EU() * 0.003) * Math.min(1, Math.abs(vp) / 0.25) * Math.sign(vp) * k;
-        if (klav.left) m.a -= rul;
-        if (klav.right) m.a += rul;
+        m.a += rul * klav.rul;
+        if (klav.tormoz) vp *= Math.pow(0.9, k);
       }
       m.vx = fx * vp + rx * vb; m.vz = fz * vp + rz * vb;
       const px = m.x, pz = m.z;
@@ -1478,25 +1762,38 @@
         { tip: "monety", kak: "peshkom", tekst: "Выйди из машины 🚪 и собери монеты" } ] },
       { id: "zoloto", nazv: "✨ Золотая машина", vremya: 120, nagrada: 250, shagi: [
         { tip: "sest", id: "zoloto", tekst: "Найди золотую машину и сядь в неё" },
-        { tip: "tochka", x: -20, z: 100, kak: "zoloto", tekst: "Пригони её в гараж" } ] }
+        { tip: "tochka", x: -20, z: 100, kak: "zoloto", tekst: "Пригони её в гараж" } ] },
+      { id: "derevnya", nazv: "🏡 Посылка в деревню", vremya: 150, nagrada: 250, shagi: [
+        { tip: "tochka", x: 20, z: -60, kak: "mashina", tekst: "Забери посылку на почте в городе" },
+        { tip: "tochka", x: 180, z: -180, kak: null, tekst: "Отвези посылку в Деревню Восток" } ] },
+      { id: "koltso", nazv: "🛣️ Кольцевая гонка", vremya: 160, nagrada: 350, shagi: [
+        [-20, -300], [150, -300], [300, -300], [300, 20], [300, 300], [-20, 300], [-300, 300], [-300, 20], [-300, -300], [-20, -300]]
+        .map(([x, z], i) => ({ tip: "tochka", x, z, kak: "mashina", tekst: "Кольцо: точка " + (i + 1) + " из 10" })) },
+      { id: "vershina", nazv: "🏔️ Покори вершину горы", vremya: 200, nagrada: 400, shagi: [
+        { tip: "tochka", x: -20, z: -300, kak: null, tekst: "Доберись до подножия гор (север)" },
+        { tip: "tochka", x: VERSHINA[0], z: VERSHINA[1], kak: null, tekst: "Заберись на вершину к красному флагу! 🚩" } ] }
     ];
     sohr.missii = sohr.missii || [];
 
     function novyiGorod() {
-      const c = mirGoroda();
+      const karta = sohr.karta || { sezon: "leto", mesto: "gorod" };
+      const c = mirGoroda(karta.sezon);
+      C3 = c;
       scena = c.sc;
       c.mashiny.forEach((m) => { if (m.id === "moya") m.model = zamenitMashinu(c.sc, m.model); });
       const moya = c.mashiny.find((m) => m.id === "moya");
-      Object.assign(moya, { x: -17, z: 60, a: 0, vx: 0, vz: 0 });
+      Object.assign(moya, karta.mesto === "gory" ? { x: -20, z: -298, a: 0, vx: 0, vz: 0 } : { x: -17, z: 60, a: 0, vx: 0, vz: 0 });
+      moya.model.rotation.order = "YXZ";
       if (c.chelovek.userData.klyuch !== JSON.stringify(sohr.odezhda)) {    // переоделся в гараже — новый человечек
         c.sc.remove(c.chelovek); c.chelovek = sozdatCheloveka(sohr.odezhda); c.chelovek.userData.klyuch = JSON.stringify(sohr.odezhda); c.sc.add(c.chelovek);
       }
       c.chelovek.visible = false; c.passazhir.visible = false; c.mayak.visible = false; c.strelka.visible = false;
       c.monety.forEach((m) => (m.visible = false));
       kamera.fov = 62; kamera.updateProjectionMatrix();
-      kamera.position.set(-17, 6, 72);
+      kamera.position.set(moya.x, 6, moya.z + 12);
       $("pult2").style.display = "flex";
-      banner("🏙️ Добро пожаловать в город!<br><small>📋 — миссии · 🚪 — выйти из машины</small>");
+      banner((karta.sezon === "zima" ? "❄️ Зима! Дорога скользкая" : "☀️ Лето") + (karta.mesto === "gory" ? " · ⛰️ Ты у подножия гор" : " · 🏙️ Ты в городе") +
+        "<br><small>📋 — миссии · 🚪 — выйти из машины</small>");
       return { vMashine: moya, chel: { x: 0, z: 0, a: 0, faza: 0 }, missiya: null, tik: 0 };
     }
     function nachatMissiyu(i) {
@@ -1509,7 +1806,7 @@
     function podgotovitShag() {
       const c = C3, mi = s.missiya, sh = mi.ms.shagi[mi.shag];
       c.mayak.visible = sh.tip === "tochka";
-      if (sh.tip === "tochka") c.mayak.position.set(sh.x, 0.1, sh.z);
+      if (sh.tip === "tochka") c.mayak.position.set(sh.x, vysota(sh.x, sh.z) + 0.1, sh.z);
       if (sh.passazhir) { c.passazhir.visible = true; c.passazhir.position.set(sh.x - 7, 0.3, sh.z); c.passazhir.rotation.y = -Math.PI / 2; }
       if (sh.tip === "monety") {
         mi.monety = c.monety.map((m) => { m.visible = true; m.position.set(-92 + sluch() * 24, 1.2, 67 + sluch() * 24); return m; });
@@ -1596,8 +1893,7 @@
       c.mashiny.forEach((m) => ehatMashina(m, k, m === s.vMashine));
       if (!s.vMashine) {                                        // идём пешком
         const ch = s.chel, beg = klav.hand ? 0.24 : 0.12;
-        if (klav.left) ch.a -= 0.06 * k;
-        if (klav.right) ch.a += 0.06 * k;
+        ch.a += 0.06 * k * klav.rul;
         const v = (klav.up ? beg : 0) - (klav.down ? 0.07 : 0);
         const nx = ch.x + Math.sin(ch.a) * v * k, nz = ch.z - Math.cos(ch.a) * v * k;
         const vMashinu = c.mashiny.some((m) => Math.hypot(m.x - nx, m.z - nz) < 1.9);
@@ -1609,29 +1905,40 @@
     function risovatGorod(k) {
       const c = C3, t = performance.now() / 1000;
       c.mashiny.forEach((m) => {
-        postavitM(m.model, m.x, m.z, m.a);
-        animirovatMashinu(m.model, (m.vp || 0) * k * 3, m === s.vMashine ? rulKlav() : 0, Math.max(-0.07, Math.min(0.07, -(m.vb || 0) * 0.15)));
+        const h = vysota(m.x, m.z), rx = Math.cos(m.a), rz = Math.sin(m.a);
+        const krenB = (vysota(m.x + rx * 1.2, m.z + rz * 1.2) - vysota(m.x - rx * 1.2, m.z - rz * 1.2)) / 2.4;   // наклон вбок
+        m.model.position.set(m.x, h, m.z); m.model.rotation.order = "YXZ"; m.model.rotation.y = -m.a;
+        m.model.rotation.x = Math.atan(m.uklon || 0);                         // нос вверх в горку
+        animirovatMashinu(m.model, (m.vp || 0) * k * 3, m === s.vMashine ? rulKlav() : 0, Math.atan(krenB) + Math.max(-0.07, Math.min(0.07, -(m.vb || 0) * 0.15)));
       });
       const ig = gdeIgrok();
       if (!s.vMashine) {
         const ch = s.chel;
-        c.chelovek.position.set(ch.x, 0.3, ch.z); c.chelovek.rotation.y = -ch.a;
+        c.chelovek.position.set(ch.x, Math.max(0.3, vysota(ch.x, ch.z)), ch.z); c.chelovek.rotation.y = -ch.a;
         shagat(c.chelovek, ch.faza, Math.min(1, Math.abs(ch.v || 0) * 8));
       }
       // камера: за машиной дальше и выше, за человеком — ближе
       const a = s.vMashine ? s.vMashine.a : s.chel.a;
-      kameraZa(ig.x, ig.z, a, k, !s.vMashine);
+      const hIg = vysota(ig.x, ig.z);
+      kameraZa(ig.x, ig.z, a, k, !s.vMashine, hIg);
+      const hk = vysota(kamera.position.x, kamera.position.z) + 1.3;            // камера не проваливается в гору
+      if (kamera.position.y < hk) kamera.position.y = hk;
+      if (c.sneg) {                                                              // снежинки падают вокруг камеры
+        const ps = c.sneg.geometry.attributes.position;
+        for (let i = 0; i < ps.count; i++) { let y = ps.getY(i) - 0.12 * k; if (y < 0) y += 50; ps.setY(i, y); ps.setX(i, ps.getX(i) + Math.sin(t + i) * 0.01); }
+        ps.needsUpdate = true; c.sneg.position.set(kamera.position.x, kamera.position.y - 20, kamera.position.z);
+      }
       c.chelovek.visible = !s.vMashine && vidKamery !== 2;      // из глаз себя не видно
       // солнце (и его тени) ходит за игроком
-      c.solnce.position.set(ig.x + c.solnceNapr.x * 100, c.solnceNapr.y * 100 + 40, ig.z + c.solnceNapr.z * 100);
-      c.solnce.target.position.set(ig.x, 0, ig.z);
+      c.solnce.position.set(ig.x + c.solnceNapr.x * 100, hIg + c.solnceNapr.y * 100 + 40, ig.z + c.solnceNapr.z * 100);
+      c.solnce.target.position.set(ig.x, hIg, ig.z);
       // маяк, монеты и стрелка-навигатор
       c.mayak.children[0].material.opacity = 0.2 + Math.sin(t * 4) * 0.08;
       c.monety.forEach((m, i) => { if (m.visible) { m.rotation.y = t * 3 + i; m.position.y = 1.2 + Math.sin(t * 3 + i) * 0.2; } });
       const cl = celShaga();
       c.strelka.visible = !!cl;
       if (cl) {
-        c.strelka.position.set(ig.x, s.vMashine ? 3.4 : 2.7, ig.z);
+        c.strelka.position.set(ig.x, hIg + (s.vMashine ? 3.4 : 2.7), ig.z);
         c.strelka.lookAt(cl.x, c.strelka.position.y, cl.z);
       }
       const mi = s.missiya, stroki = [];
@@ -1649,15 +1956,24 @@
     function postavitM(obj, x, z, a) { obj.position.set(x, 0, z); obj.rotation.y = -a; }
 
     // мини-карта в углу: дороги, машины, цель
+    // мини-карта показывает 300×300 м вокруг игрока (мир большой!)
     function miniKarta(ig, a, cl) {
-      const mk = $("minikarta"), c = mk.getContext("2d"), S = mk.width, m = S / 220;
-      const px = (x) => (x + 110) * m;
-      c.fillStyle = "rgba(20,30,40,.85)"; c.fillRect(0, 0, S, S);
-      c.fillStyle = "#6b7280"; DOROGI.forEach((L) => { c.fillRect(px(L - 5), px(-105), 10 * m, 210 * m); c.fillRect(px(-105), px(L - 5), 210 * m, 10 * m); });
-      c.fillStyle = "#4f8a3c"; [[0, 4], [2, 2]].forEach(([i, j]) => c.fillRect(px(-95 + i * 40), px(-95 + j * 40), 30 * m, 30 * m));
-      C3.mashiny.forEach((q) => { c.fillStyle = q.id === "zoloto" ? "#ffc107" : "#90caf9"; c.fillRect(px(q.x) - 2, px(q.z) - 2, 4, 4); });
-      if (cl) { c.fillStyle = "#ffd600"; c.beginPath(); c.arc(px(cl.x), px(cl.z), 5, 0, 7); c.fill(); }
-      c.save(); c.translate(px(ig.x), px(ig.z)); c.rotate(a);
+      const mk = $("minikarta"), c = mk.getContext("2d"), S = mk.width, m = S / 300;
+      const px = (x) => (x - ig.x) * m + S / 2, pz = (z) => (z - ig.z) * m + S / 2;
+      c.fillStyle = C3.zima ? "rgba(200,212,222,.9)" : "rgba(54,92,48,.9)"; c.fillRect(0, 0, S, S);
+      c.fillStyle = "rgba(60,64,70,.9)"; c.fillRect(px(-110), pz(-110), 220 * m, 220 * m);
+      c.strokeStyle = "#9aa3ad"; c.lineCap = "round";
+      DOROGI.forEach((L) => { c.lineWidth = 10 * m; c.beginPath(); c.moveTo(px(L), pz(-105)); c.lineTo(px(L), pz(105)); c.moveTo(px(-105), pz(L)); c.lineTo(px(105), pz(L)); c.stroke(); });
+      ZAGORODNYE.forEach(([tochki, sh]) => { c.lineWidth = sh * m; c.beginPath(); tochki.forEach(([x, z], i) => (i ? c.lineTo(px(x), pz(z)) : c.moveTo(px(x), pz(z)))); c.stroke(); });
+      c.fillStyle = "#ffab91"; DEREVNI.forEach(([x, z]) => { c.beginPath(); c.arc(px(x), pz(z), 6, 0, 7); c.fill(); });
+      c.fillStyle = "#e53935"; c.fillRect(px(VERSHINA[0]) - 3, pz(VERSHINA[1]) - 3, 6, 6);
+      C3.mashiny.forEach((q) => { c.fillStyle = q.id === "zoloto" ? "#ffc107" : "#90caf9"; c.fillRect(px(q.x) - 2, pz(q.z) - 2, 4, 4); });
+      if (cl) {                                                   // цель далеко — показываем стрелку у края карты
+        let tx = px(cl.x), tz = pz(cl.z); const vne = tx < 6 || tx > S - 6 || tz < 6 || tz > S - 6;
+        tx = Math.max(6, Math.min(S - 6, tx)); tz = Math.max(6, Math.min(S - 6, tz));
+        c.fillStyle = "#ffd600"; c.beginPath(); c.arc(tx, tz, vne ? 7 : 5, 0, 7); c.fill();
+      }
+      c.save(); c.translate(S / 2, S / 2); c.rotate(a);
       c.fillStyle = "#ff5252"; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 5); c.lineTo(-5, 5); c.closePath(); c.fill(); c.restore();
     }
     function pokazatMissii() {
@@ -1686,6 +2002,7 @@
         vitrina.mashina.rotation.y += 0.008 * k;
         narisovat(renderVitrina, KOMP.vitr, vitrina.scena, vitrina.kamera);
       } else if (s && scena) {
+        obnovitRul(); smeshatVvod();
         if (igraIdet) {
           if (rezhim === "gonka") obnovitGonku(k); else if (rezhim === "parkovka") obnovitParkovku(k); else if (rezhim === "drift") obnovitDrift(k); else obnovitGorod(k);
         }
@@ -1698,9 +2015,27 @@
       requestAnimationFrame(cikl);
     }
     requestAnimationFrame(cikl);
-    risovatGarazh();
+    risovatGarazh(); pokazatUpravlenie();
+
+    // ================= 📲 ПРИЛОЖЕНИЕ (PWA) =================
+    if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+    let zaprosUstanovki = null;
+    const uzheUstanovleno = matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    $("ustTekst").innerHTML = uzheUstanovleno ? "✅ Игра открыта как приложение!"
+      : ios ? "На iPhone: нажми <b>Поделиться ⬆️</b> внизу Safari → <b>«На экран Домой»</b>. Появится иконка игры."
+      : "Открой игру в Chrome — появится кнопка «Установить». Или меню ⋮ → «Добавить на главный экран».";
+    addEventListener("beforeinstallprompt", (e) => {           // Android/Chrome сам предлагает установку
+      e.preventDefault(); zaprosUstanovki = e; $("knUstanovit").style.display = "inline-block";
+      $("ustTekst").textContent = "Нажми кнопку — игра появится на экране телефона, как настоящее приложение.";
+    });
+    $("knUstanovit").onclick = async () => {
+      if (!zaprosUstanovki) return;
+      zaprosUstanovki.prompt(); await zaprosUstanovki.userChoice; zaprosUstanovki = null; $("knUstanovit").style.display = "none";
+    };
+    addEventListener("appinstalled", () => { $("ustTekst").textContent = "✅ Установлено! Ищи иконку «Турбо Гараж» на экране."; });
     window.TEST = { start, klav, get s() { return s; }, get igraIdet() { return igraIdet; }, sohr, UROVNI,
-      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, get C3() { return C3; }, vitrina, sozdatMashinu, smenitKameru, vesEkran, risovatGarazh };   // для проверки игры
+      setUroven: (n) => (tekUroven = n), obnovitGonku, obnovitParkovku, obnovitDrift, obnovitGorod, vyitiIliSest, nachatMissiyu, vitrina, sozdatMashinu, smenitKameru, vesEkran, risovatGarazh, vysota, tach, VERSHINA, postavitPeredachu, get C3() { return C3; } };   // для проверки игры
   </script>
 </body>
 </html>
