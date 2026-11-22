@@ -1,5 +1,5 @@
 // Service Worker — «помощник», который сохраняет игру в телефоне, чтобы она открывалась как приложение
-const KESH = "turbo-garazh-v1";
+const KESH = "turbo-garazh-v2";
 const OSNOVA = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
