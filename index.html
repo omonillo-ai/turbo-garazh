@@ -2573,10 +2573,10 @@
 
     // ======== 💼 БИЗНЕСЫ: купил — они приносят монеты, даже когда ты не играешь (до 8 часов) ========
     const BIZNESY = [
-      { id: "moika", nazv: "🧽 Автомойка", x: 40, z: 60, cena: 500, dohod: 20, bonus: "Мыть машину бесплатно" },
-      { id: "sto", nazv: "🔧 Автомастерская", x: 80, z: 60, cena: 800, dohod: 35, bonus: "Ремонт бесплатно" },
-      { id: "restoran", nazv: "🍔 Ресторан", x: -40, z: 60, cena: 1200, dohod: 50, bonus: "Еда бесплатно" },
-      { id: "salon", nazv: "🚗 Автосалон", x: 0, z: 60, cena: 3000, dohod: 120, bonus: "Здесь покупают машины" }
+      { id: "moika", nazv: "🧽 Автомойка", x: 40, z: 60, cena: 5000, dohod: 500, bonus: "Мыть машину бесплатно" },
+      { id: "sto", nazv: "🔧 Автомастерская", x: 80, z: 60, cena: 8000, dohod: 875, bonus: "Ремонт бесплатно" },
+      { id: "restoran", nazv: "🍔 Ресторан", x: -40, z: 60, cena: 12000, dohod: 1250, bonus: "Еда бесплатно" },
+      { id: "salon", nazv: "🚗 Автосалон", x: 0, z: 60, cena: 30000, dohod: 3000, bonus: "Здесь покупают машины" }
     ];
     sohr.biznesy = sohr.biznesy || {};
     const vyruchka = (b) => { const t0 = sohr.biznesy[b.id]; if (!t0) return 0; return Math.floor(Math.min(480, (Date.now() - t0) / 60000) * b.dohod); };
